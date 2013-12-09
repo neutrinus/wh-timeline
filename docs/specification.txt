@@ -1,0 +1,454 @@
+TimeLine
+========
+
+One of the basic tasks in MonitOwl is to browse historical data. TimeLine is
+a user control element designed to make it easy for user to define which part
+of the historical data to display.
+
+TimeLine control might be displayed on almost any MonitOwl screen, including
+dashboards with various plots and indicators, configuration screens (where user
+will be able to check past system configuration), etc. There will be at most
+one TimeLine control at a time — it will be used to define time period or
+a single point in time for displayed data on all other controls.
+
+For convenience, the TimeLine control will display a graph of number of events
+registered in time. This way user will be able to quickly locate interesting
+time periods (e.g. time period with more failures than usually) and select it
+with some pointing device. Currently we plan to just make it a simple zoomable
+
+We'd like to allow user to precisely select periods of time as small as a minute
+and as large as ten years. Therefore some kind of zooming/scrolling seems
+necessary.
+
+One of the use cases for MonitOwl is to display live data or “replay” the
+situation as was seen on dashboard in the past. The replay feature is
+specifically useful in assessment of response of system administrators to an
+event (e.g. external audit). Therefore the control must be able to allow user to
+choose one of several cases:
+
+  * display a fixed period of time, e.g. “July 2013”,
+    “August 13, 2012, 15:30 UTC — September 27, 2013, 13:10 UTC”,
+
+  * display live data in a window of a specific length, e.g. “last 28 days”,
+    “last 13 minutes”,
+
+  * replay data as they were shown in the past, e.g. “a moving window starting
+    from August 10, 2013, 14:00 — 16:00”,
+
+  * replay or show live data with a fixed start date, e.g. “all data since
+    August 18, 2010”, or “July 15, 2013 — July 17, 2013 and update the end
+    date”.
+
+Data might not always be available immediately. Some parts of the graph might
+need to indicate that data is not yet download, are still being computed by the
+server or are not available. For example, these states might be indicated by
+an additional (gray/yellow/red) shade applied to specific parts of the time
+line.
+
+Scope
+-----
+
+Project scope is limited to the user control itself: data presentation and
+interaction with user. Specifically the following elements are in the scope:
+
+  * Displaying data, including presenting the selected point in time or time
+    period, displaying the graph data, displaying the data availability status,
+    showing the current settings regarding tracking.
+
+  * UI for modifying the state of the widget and its parameters:
+    selected_start/end, visible_start/end, start/end_tracked.
+
+  * Minimal design work necessary to make user control visually fit into the
+    MonitOwl overall design theme.
+
+  * User experience design: making implemented features easy to discover and
+    use by new users.
+
+
+The following elements are outside the scope of TimeLine project:
+
+  * Requesting data from server. An external piece of code will listen to
+    changes in TimeLine configuration, specifically changes to variables
+    such as `visible_start`, `visible_end` and `active` to decide what data
+    to provide, and will deliver the necessary parts by updates to the
+    configuration structure.
+
+  * Implementing live data/replay time updates. An external piece of code
+    will implement a timer feature that will update `selected_start` and
+    `selected_end` variables in TimeLine's scope accordingly, taking values
+    of `start_tracked` and `end_tracked` into account (but not necessarily
+    exactly following these values!)
+
+
+Assumptions
+-----------
+
+The implementation may assume that all dates are provided in UTC and are to be
+displayed in UTC.
+
+The currently developed interface is built with assumption of a standard desktop
+web browser, with optimal performance on a 1920x1080 display and some reasonable
+behavior on smaller desktop screens. Specifically, the user control does not
+have to work under mobile targets.
+
+
+Expected functionality
+----------------------
+
+  * User control implemented in form of a AngularJS directive.
+
+  * User control can be in one of two modes: choosing a time period or choosing
+    a point in time. The current mode is decided by application code, not by
+    user. Therefore no user interface is necessary to switch between these
+    modes.
+
+  * User control displays a graph based on data provided by external code.
+    The graph presents number of events of relevance (see the `data.raw`
+    configuration parameter below). The user control can assume that values
+    to be displayed are always non-negative, the zero level is always to be
+    displayed, the scale needs to adapt to the data.
+
+  * User control displays state of the graph data. Any period of time might be
+    declared as “not loaded” (the webapp still waits for the data to be
+    downloaded from the server), “loaded” (the data is available to the user),
+    “missing” (the server explicitly declares that it has no data for the
+    relevant period), or “computing” (the server says the data are still being
+    computed).
+
+  * User can define the dates (both start and end dates in case of time period
+    mode, or just the single date in case of point in time mode):
+
+      * By picking them in a calendar/clock-like widget,
+
+      * By typing in,
+
+      * By clicking on a graph,
+
+      * By choosing it from a predefined list of time periods/points in time
+        (both automatically provided and defined by user; implementation can
+        assume that there will be on average up to 30 such periods, with unusual
+        cases having more than that),
+
+      * By choosing either start or end date, and typing in length of the time
+        period (in time period mode).
+
+  * User can change the tracking mode:
+
+      * No tracking, ie. dates do not change.
+
+      * When in time period mode: end date is incremented by one second each
+        second.
+
+      * When in time period mode: both start and end date are incremented by one
+        second each second.
+
+      * When in point in time mode: the chosen timestamp is incremented by one
+        second each second.
+
+  * User control fills its container, adapting to any potential resizes.
+
+  * User can smoothly zoom in and zoom out. Up to two different zoom levels
+    are visible at a time, with different opacity and colors.
+
+    The initial idea is to make the user control decide which zoom level to
+    display based on the zoom level's bin_width property. Let say the TimeLine
+    user control has a width of 1000px, and that the current zoom is set so
+    that user sees about 6 months worth of data. This means that one day is
+    represented by about 5 pixels, and a week by about 38.36 pixels.
+
+    The user control may therefore decide to display both daily and weekly
+    zooms, where the weekly zoom is displayed “behind” the daily zoom, and the
+    daily zoom level data is slightly transparent to make weekly data also
+    visible.
+
+    In case of resize, the user control preserves the per-pixel zoom ratio. This
+    means that, in the above example, if the user control container was resized
+    to 2000px, the user control should display a year worth of data.
+
+    Active zoom levels can be decided on by checking which zoom levels will
+    result in bins whose approximate widths (as defined by `bin_width`) are
+    close to 10 pixels.
+
+
+Planned future functionality
+----------------------------
+
+We plan additional functionality in the future. We don't need it now, but
+we expect that adding these features will not require rewriting the whole
+TimeLine code from scratch.
+
+  * Choosing more than a single time period to display for comparison purposes.
+
+  * Implementing a different type of graph (e.g. multiple overlaid line
+    graphs). Any graph will always have time on its X axis.
+
+  * Displaying time in a specified time zone, including displaying different
+    parts of the time line in different time zones. The translation will
+    probably be performed using an externally-provided mapping function.
+
+
+Configuration
+-------------
+
+The following list contains information that can be provided to the TimeLine
+control. The specific format is not fixed — we're ready to discuss any
+modifications that might be useful. The following text assumes that the
+information is passed as model objects inside some Angular scope. Notation:
+
+  * IN/OUT — both TimeLine and external code can change this value; value always
+    comes pre-initialized.
+
+  * IN — TimeLine is not expected to change this value, external code can
+    change it; value is always pre-initialized.
+
+  * OUT — TimeLine is expected to change this value, external code is not.
+
+  * STATIC — this value is fixed during the whole session.
+
+  * “for now” — we think this is a good assumption, but we're not sure about it
+    yet. Proceed with care.
+
+
+Variables:
+
+  * `is_period`: is the user control in period of time mode? Boolean (IN).
+
+  * `selected_start`: timestamp of the left edge of selected region. Integer
+    (IN/OUT).
+
+  * `selected_end`: timestamp of the right edge of selected region. Integer
+    (IN/OUT).
+
+  * `visible_start`: timestamp of the left edge of visible region. Integer (OUT
+    for now).
+
+  * `visible_end`: timestamp of the right edge of visible region. Integer (OUT
+    for now).
+
+  * `is_start_tracked`: is the left edge of selected region supposed to track
+    current time? Boolean (OUT for now).
+
+  * `is_end_tracked`: is the right edge of selected region supposed to track
+    current time? Boolean (OUT for now).
+
+  * `data`: raw data to be presented by the diagram, in form of a list of
+    available zoom levels together with relevant data. An array of objects with
+    fields (STATIC for now):
+
+      * `name`: a user-friendly name, can be shown in the interface (STATIC for
+        now),
+
+      * `bin_width`: approximate (!) width of a single bin of raw data, in
+        seconds (STATIC for now),
+
+      * `active`: is this zoom level data visible now? Boolean (OUT).
+
+      * `color`: base color of the zoom level. String containing a css color
+        value (IN).
+
+      * `epoch_raw`: version of raw data. An integer incremented when the
+        currently visible part of `raw` data is modified. Integer (IN).
+
+      * `raw`: raw data for the specific zoom level. An array of objects with
+        fields:
+
+          * `start`: timestamp of the bin's left edge. Integer (IN),
+
+          * `end`: timestamp of the bin's right edge. Integer (IN),
+
+          * `value`: bin height. Number (IN).
+
+        The array is sorted by start value. Bins will not overlap. For any k,
+        raw[k].end might (doesn't have to) be equal to raw[k+1].start. You
+        can assume that for any time period not covered by bins the value is
+        equal to zero (for now).
+
+      * `epoch_state`: version of the non-missing data. An integer
+        incremented when the currently visible part of `missing` data is
+        modified. Integer (IN).
+
+      * `state`: list of periods of time whose values are known. An array
+        of objects with fields:
+
+          * `start`: timestamp of a period's left edge. Integer (IN),
+
+          * `end`: timestamp of a period's right edge. Integer (IN),
+
+          * `state`: state of the period: "loaded", "missing", "computing".
+            String (IN).
+
+        The array is sorted by start value. Periods do not overlap. For any k,
+        nonmissing[k].end might (doesn't have to) be equal to raw[k+1].start.
+        You can assume that for any time period not covered by the provided
+        periods, the state is “data not yet loaded”.
+
+        The periods defined by `raw` and `state` arrays do not have to be
+        the same. Example: the current zoom level is such that each raw bin
+        summarizes a month of data. Let say that the graph wants to display the
+        value for February 2014. However, the server reports that two weeks
+        in the middle of that month are missing. Therefore the `raw` data array
+        will, after potentially some time required for the server to send the
+        data, get a value for that month based on the data that is actually
+        available. However, the relevant part of the state might declare:
+
+          * firstly, that the data for February 2014 is not yet loaded,
+
+          * then, that the data is still being computed,
+
+          * then, that the data for February 1-8 is loaded, and February 9-28
+            is still being computed,
+
+          * then, that the data for February 9-21 is missing, and February 22-28
+            is still being computed,
+
+          * finally, that the data for February 22-28 is loaded.
+
+      * `labels`: a list of labels and their timestamps to be displayed if this
+        zoom level is visible. An array of objects (IN) with fields:
+
+          * `timestamp`: timestamp of label. Integer (IN),
+
+          * `text`: text of label. String (IN).
+
+    Implementation may assume that levels are ordered by a decreasing value of
+    the `bin_width` member.
+
+  * `predefined_choices`: a list of time periods predefined for user's
+    convenience. An array of objects (IN) with fields:
+
+      * `start`: timestamp of period's left edge. Integer (IN),
+
+      * `end`: timestamp of period's right edge. Integer (IN),
+
+      * `start_tracked`: whether the predefined period assumes that the left
+        edge will change with time. Boolean (IN),
+
+      * `end_tracked`: whether the predefined period assumes that the right
+        edge will change with time. Boolean (IN),
+
+      * `name`: user-friendly name for this time period. String (IN).
+
+
+Example configuration:
+
+    {
+        is_period: true,
+        selected_start: 1385856000,    // December 1, 2013, midnight
+        selected_end: 1388849426,      // January 4, 2013, 15:30:26
+        visible_start: 1370044800,     // June 1, 2013, midnight
+        visible_end: 1388849426,       // January 4, 2013, 15:30:26
+        is_start_tracked: false,
+        is_end_tracked: true,
+        predefined_choices: [
+            // December 1, 2013 -- January 1, 2014
+            { start: 1385856000, end: 1388534400,
+              start_tracked: false, end_tracked: false,
+              name: "Last full month" },
+
+            // December 5, 2013, 15:30:26 -- January 4, 2013, 15:30:26
+            { start: 1386257426, end: 1388849426,
+              start_tracked: true, end_tracked: true,
+              name: "Last 30 days" },
+
+            // January 1, 1970, 0:00 -- January 4, 2013, 15:30:26
+            { start: 0, end: 1388849426,
+              start_tracked: false, end_tracked: true,
+              name: "Absolutely everything" }
+        ],
+        data: [
+            {
+                name: "Yearly",
+                bin_width: 60*60*24*365,   // about 365 days
+                active: false,             // not visible
+                epoch_raw: 0,
+                raw: [],  // no data loaded yet
+                epoch_state: 0,
+                state: [] // no data loaded yet
+            },
+            {
+                name: "Monthly",
+                bin_width: 60*60*24*30,    // about 30 days
+                active: true,
+                epoch_raw: 314159,
+                raw: [
+                    { start: 1377993600, end: 1380585600, value: 5 }, // September 2013
+                    { start: 1380585600, end: 1383271200, value: 7 }, // October 2013
+                    // note: missing November data.
+                    { start: 1385863200, end: 1388541600, value: 3 }  // December 2013
+                ],
+                epoch_state: 924657,
+                state: [
+                    // September 2013 - October 15, 2013
+                    { start: 1377993600, end: 1381795200, state: "loaded" },
+
+                    // October 15, 2013 - October 22, 2013
+                    { start: 1381795200, end: 1382400000, state: "missing" },
+
+                    // October 22, 2013 - December 1, 2013
+                    { start: 1382400000, end: 1385856000, state: "computing" },
+
+                    // December 1, 2013 - January 1, 2014
+                    { start: 1385856000, end: 1388541600, state: "loaded" }
+            },
+            {
+                name: "Weekly",
+                bin_width: 60*60*24*7,     // about 7 days
+                active: true,
+                epoch: 123,
+                raw: [
+                    { start: 1377302400, end: 1377907200, value: 10.000000 },
+                    { start: 1377907200, end: 1378512000, value: 10.499167 },
+                    { start: 1378512000, end: 1379116800, value: 10.993347 },
+                    { start: 1379116800, end: 1379721600, value: 11.477601 },
+                    { start: 1379721600, end: 1380326400, value: 11.947092 },
+                    { start: 1380326400, end: 1380931200, value: 12.397128 },
+                    { start: 1380931200, end: 1381536000, value: 12.823212 },
+                    { start: 1381536000, end: 1382140800, value: 13.221088 },
+                    { start: 1382140800, end: 1382745600, value: 13.586780 },
+                    { start: 1382745600, end: 1383350400, value: 13.916635 },
+                    { start: 1383350400, end: 1383955200, value: 14.207355 },
+                    { start: 1383955200, end: 1384560000, value: 14.456037 },
+                    { start: 1384560000, end: 1385164800, value: 14.660195 },
+                    { start: 1385164800, end: 1385769600, value: 14.817791 },
+                    { start: 1385769600, end: 1386374400, value: 14.927249 },
+                    { start: 1386374400, end: 1386979200, value: 14.987475 },
+                    { start: 1386979200, end: 1387584000, value: 14.997868 },
+                    { start: 1387584000, end: 1388188800, value: 14.958324 },
+                    { start: 1388188800, end: 1388793600, value: 14.869238 },
+                    { start: 1388793600, end: 1389398400, value: 14.731500 },
+                    { start: 1389398400, end: 1390003200, value: 14.546487 },
+                    { start: 1390003200, end: 1390608000, value: 14.316047 },
+                    { start: 1390608000, end: 1391212800, value: 14.042482 },
+                    { start: 1391212800, end: 1391817600, value: 13.728526 },
+                    { start: 1391817600, end: 1392422400, value: 13.377316 },
+                    { start: 1392422400, end: 1393027200, value: 12.992361 },
+                    { start: 1393027200, end: 1393632000, value: 12.577507 },
+                    { start: 1393632000, end: 1394236800, value: 12.136899 },
+                    { start: 1394236800, end: 1394841600, value: 11.674941 },
+                    { start: 1394841600, end: 1395446400, value: 11.196247 }
+                ],
+                epoch_state: 442,
+                state: [
+                    { start: 1377302400, end: 1395446400, state: "loaded" }
+                ]
+            }
+        ]
+    }
+
+
+Code quality requirements
+-------------------------
+
+We expect the code to follow good practices of JavaScript programming,
+including:
+
+  * a test suite prepared using the Jasmine framework, that extensively covers
+    the implementation code and provides performance measurements of key parts
+    of the code,
+
+  * a clean pass through JSLint, Google Closure Linter and Google Closure
+    Compiler,
+
+  * code written with regards to legibility and performance,
+
+  * reasonable amount of documentation.
