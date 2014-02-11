@@ -1,0 +1,122 @@
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Timeline</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap-theme.min.css">
+
+        <!-- build:css styles/vendor.css -->
+        <link rel="stylesheet" href="bower_components/jquery-ui/themes/smoothness/jquery-ui.css">
+        <link rel="stylesheet" href="bower_components/jquery-ui-bootstrap/jquery.ui.theme.css">
+        <!-- endbuild -->
+
+        <!-- build:css(.tmp) styles/main.css -->
+        <link rel="stylesheet" href="styles/main.css">
+        <!-- endbuild -->
+        <style>
+            body {
+                background: #fafafa;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                color: #333;
+            }
+
+            h4 {
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body ng-controller="TimelineController" ng-cloak style="padding-left: 20px">
+        <div class="container">
+
+            <h2>
+                Full width:
+            </h2>
+            <button ng-click="addData()" ng-hide="steps.length == currentStep" class="btn btn-default">Get more data!</button>
+
+            <wh:timeline-debug config="timelineConfig"></wh:timeline-debug>
+            <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+                <div class="container">
+                    <wh:timeline ng-model="timelineConfig"></wh:timeline>
+                </div>
+            </nav>
+
+
+            <!--
+
+            <hr/>
+
+            <h2>Narrow:</h2>
+
+            <div style="width: 500px">
+                <wh:timeline-debug config="timelineConfigNarrow"></wh:timeline-debug>
+                <wh:timeline config="timelineConfigNarrow"></wh:timeline>
+            </div>
+
+            <hr/>
+
+            <h2>Point in time:</h2>
+
+            <div style="width: 500px">
+                <wh:timeline-debug config="timelineConfigPointInTime"></wh:timeline-debug>
+                <wh:timeline config="timelineConfigPointInTime"></wh:timeline>
+            </div>
+
+            <hr/>
+
+            <h2>Too narrow:</h2>
+
+            <wh:timeline-debug config="timelineConfigTooNarrow"></wh:timeline-debug>
+            <div style="width: 300px">
+                <wh:timeline config="timelineConfigTooNarrow"></wh:timeline>
+            </div>
+
+            <hr/>
+
+            <!--
+            <h2>Minutes:</h2>
+
+            <div style="width: 500px">
+                <wh:timeline config="timelineConfigMinutes"></wh:timeline>
+            </div>
+            -->
+        </div>
+
+        <!-- build:js scripts/vendor.js -->
+        <!-- bower:js -->
+            <script src="bower_components/underscore/underscore.js"></script>
+            <script src="bower_components/jquery/jquery.js"></script>
+            <script src="bower_components/jquery-ui/ui/jquery-ui.js"></script>
+            <script src="bower_components/d3/d3.js"></script>
+            <script src="bower_components/angular/angular.js"></script>
+            <script src="bower_components/angular-ui-date/src/date.js"></script>
+            <script src="bower_components/jquery-mousewheel/jquery.mousewheel.js"></script>
+        <!-- endbower -->
+        <script src="bower_components/moment/moment.js"></script>
+        <!-- endbuild -->
+
+        <script src="//getbootstrap.com/dist/js/bootstrap.min.js"></script>
+
+        <!-- build:js scripts/wh-timeline.js -->
+            <script src="scripts/angular.timepicker.js"></script>
+            <script src="scripts/jquery-selectableArea.js"></script>
+            <script src="scripts/wh-timeline.js"></script>
+            <script src="scripts/wh-timeline-selection.js"></script>
+            <script src="scripts/wh-timeline-chart.js"></script>
+            <script src="scripts/wh-timeline-utils.js"></script>
+        <!-- endbuild -->
+
+        <script src="scripts/templates.js"></script>
+
+        <!-- build:js scripts/app.js -->
+            <script src="scripts/app.js"></script>
+        <!-- endbuild -->
+</body>
+</html>

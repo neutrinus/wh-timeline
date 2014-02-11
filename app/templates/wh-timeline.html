@@ -1,0 +1,38 @@
+
+<div class="wh-timeline">
+
+    <!-- @TODO: Move visible/hidden to the main directive -->
+    <wh:timeline-selection-config ng-model="ngModel" is-active="adjustingSelection"></wh:timeline-selection-config>
+
+    <div class="wh-timeline-side">
+        <button class="btn btn-default glyphicon glyphicon-wrench" ng-click="adjustingSelection = !adjustingSelection"></button>
+        <wh:timeline-perspective-picker ng-model="ngModel" on-change="setTimePerspectives(visibleTimePerspectives)"></wh:timeline-perspective-picker>
+    </div>
+
+    <div class="wh-timeline-widget">
+        <!-- @TODO: refactor to a separate directive maybe? -->
+        <div class="overlay svg-area">
+            <div class="y-axis-pane"></div>
+            <div class="chart-pane">
+                <div class="chart-viewport">
+                    <div class="charts-themselves"></div>
+                    <div class="x-axis-pane"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-area">
+            <!-- @TODO: refactor to a separate directive -->
+            <div class="overlay state-data">
+                <div ng-repeat="state in states" ng-style="{
+                    'left':  state.left,
+                    'width': state.width
+                }" class="state" ng-class="state.state"></div>
+            </div>
+
+            <wh:timeline-selections ng-model="ngModel" adjusting-selection="adjustingSelection"></wh:timeline-selections>
+
+        </div>
+    </div>
+
+</div>

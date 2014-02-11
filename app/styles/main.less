@@ -1,0 +1,385 @@
+.navbar {
+
+    background-image: -o-linear-gradient(right, #F7F7F7 25%, #ADADAD 50%, #F7F7F6 75%);
+    background-image: -moz-linear-gradient(right, #F7F7F7 25%, #ADADAD 50%, #F7F7F6 75%);
+    background-image: -webkit-linear-gradient(right, #F7F7F7 25%, #ADADAD 50%, #F7F7F6 75%);
+    background-image: -ms-linear-gradient(right, #F7F7F7 25%, #ADADAD 50%, #F7F7F6 75%);
+    background-image: linear-gradient(to right, #F7F7F7 5%, #ADADAD 50%, #F7F7F6 95%);
+
+}
+
+.wh-timeline-config(@width, @height) {
+    position: absolute;
+    z-index: 100000;
+
+    top: -@height - 5;
+    left: 50%;
+
+    display: block;    // override popover css
+    width: @width;
+    max-width: @width; // override popover css
+    height: @height;
+
+    margin-left: -@width/2;
+
+    &.point {
+        @width: 315px;
+        @height: 462px;
+
+        top: -@height - 5;
+        width: @width;
+        height: @height;
+        margin-left: -@width/2;
+    }
+
+    .wh-timeline-config-close {
+        @btn-dim: 20px;
+
+        width: @btn-dim;
+        height: @btn-dim;
+        box-sizing: border-box;
+    }
+
+    .ui-datepicker-inline,
+    timepicker-unix > table {
+        margin: 0 auto;
+    }
+
+    .ui-datepicker {
+        height: 237px;
+    }
+}
+
+.wh-timeline {
+
+    @x-axis-height: 110px;
+    @data-area-height: 130px;
+
+    @timeline-widget-height: @x-axis-height + @data-area-height;
+    @timeline-perspective-width: 65px;
+
+    position: relative;
+
+    &, * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    label,
+    button {
+        cursor: pointer;
+    }
+
+    .wh-timeline-config {
+        .wh-timeline-config(630px, 482px);
+    }
+
+    @media screen and (max-width: 800px) ,
+           screen and (max-height: 900px) {
+        .wh-timeline-config {
+            .wh-timeline-config(440px, 410px);
+            .ui-datepicker {
+                width: 14em;
+                height: 177px;
+
+                td .ui-state-default {
+                    padding: 0px;
+                }
+            }
+        }
+    }
+
+    .wh-timeline-side {
+        float: left;
+        width: @timeline-perspective-width;
+        .wh-timeline-perspective {
+            text-align: center;
+
+            label {
+                display: block;
+                width: @timeline-perspective-width;
+                text-align: center;
+                margin: 4px 0;
+            }
+
+            button {
+                width: @timeline-perspective-width;
+                height: @timeline-perspective-width;
+                font-size: 18px;
+            }
+        }
+    }
+
+    .wh-timeline-widget {
+        @y-axis-width: 25px;
+        @chart-viewport-height: @x-axis-height + @data-area-height;
+
+        position: relative;
+
+        min-width: 50px;
+        height: @timeline-widget-height;
+
+        margin-left:  @timeline-perspective-width;
+        padding-left: @y-axis-width;
+
+        cursor: default;
+
+        .overlay-x {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+
+        .overlay-y {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+        }
+        .overlay {
+            .overlay-y;
+            width: 100%;
+        }
+
+        .chart-area {
+            box-sizing: border-box;
+        }
+
+        .state-data {
+            z-index: 60;
+
+            overflow: hidden;
+            background: #F3F3F3; // Not loaded area
+            .state {
+                position: absolute;
+                height: 100%;
+                &.missing    { background: #FFEAEA; }
+                &.computing  { background: #FFFFE3; }
+                &.loaded     { background: #EAFFEF; }
+            }
+        }
+
+        .chart-area {
+
+            position: relative;
+
+            box-sizing: border-box;
+
+            width: 100%;
+            height: @data-area-height;
+
+            .selections {
+                z-index: 80;
+
+                .selection-area {
+                    position: absolute;
+                    height: 100%;
+
+                    // box-shadow: 0 0 8px #111;
+                    cursor: move;
+
+                    .resize-handler {
+                        @width: 7px;
+                        @height: 33px;
+
+                        position: absolute;
+                        z-index: 89;
+                        top: 50%;
+
+                        width:  @width;
+                        height: @height;
+
+                        margin-top: -@height/2;
+                        cursor: ew-resize;
+
+                        &.left  { left:  -@width + 1; }
+                        &.right { right: -@width + 1; }
+
+                        svg path {
+                            fill: #eee;
+                            stroke: #666;
+                        }
+                    }
+
+                    .fixation-delimiter {
+                        position: absolute;
+                        z-index: 90;
+
+                        top: 0;
+
+                        width: 1px;
+                        height: 100%;
+
+                        background: #000;
+                        box-shadow: 0px 0 3px #000;
+
+                        &.left  { left:  0; }
+                        &.right { right: 0; }
+                    }
+                }
+
+                .selection-area.point {
+                    width: 1px !important;
+                    background: #000;
+
+                    .resize-handler.right {
+                        display: none;
+                    }
+
+                    .fixation-delimiter {
+                        display: none
+                    }
+                }
+
+                .selection-area.sticky {
+                    &, .resize-handler {
+                        cursor: default;
+                    }
+                }
+
+                .selection-area.period {
+                    // min-width: 1px;
+                    background: rgba(0, 255, 255, 0.6);
+                }
+            }
+        }
+
+        .svg-area {
+            z-index: 70;
+            overflow: hidden;
+
+            .y-axis-pane {
+                position: absolute;
+                z-index: 88;
+                width: @y-axis-width + 1; // +1 stands for svg path element
+                height: 100%;
+
+                svg {
+                    position: absolute;
+                    right: 0;
+                }
+            }
+
+            .x.axis {
+                position: relative;
+                z-index: 87;
+            }
+
+            svg {
+                .axis {
+                    font: 10px sans-serif;
+
+                    path,
+                    line {
+                        fill: none;
+                        stroke: #000;
+                        shape-rendering: crispEdges;
+                    }
+                }
+            }
+
+
+            .chart-pane {
+                position:    relative;
+                height:      @chart-viewport-height;
+                margin-left: @y-axis-width;
+                overflow:    hidden;
+
+                background: #FFF;
+                border-left: 1px dashed #000;
+                border-right: 1px dashed #000;
+
+                .chart-viewport {
+                    .overlay-y;
+                    height: @chart-viewport-height;
+
+                    .x-axis-pane {
+                        .overlay-x;
+
+                        top: @data-area-height;
+                        height: @x-axis-height;
+                    }
+
+                    .charts-themselves {
+                        .overlay-x;
+
+                        height: @data-area-height;
+
+                        .svg {
+                            .overlay-y;
+
+                            .axis.x path {
+                                display: none;
+                            }
+
+                            .bar {
+                                position: absolute;
+                                border: 1px solid #fff;
+                                box-sizing: content-box;
+                            }
+                        }
+
+                        .svg.inactive {
+                            z-index: 100;
+                            .bar {
+                                background: #808080;
+                            }
+                        }
+
+                        .svg.active.secondary {
+                            .axis {
+                                display: none;
+                            }
+                            .bar {
+                                background: brown;
+                            }
+                        }
+
+                        .svg.active.main {
+                            .bar {
+                                background: #4682b4;
+                                opacity: 0.8;
+                            }
+
+                            .bar:hover {
+                                opacity: 0.5;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+
+.wh-timeline-debug {
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+    font-size: 12px;
+
+    h1,h2,h3,h4,h5,h6 {
+        margin: 0;
+        padding: 0;
+        font-weight: bold;
+        font-size: 1em;
+    }
+
+    table {
+        border-spacing: 0;
+        border-collapse: collapse;
+        td {
+            margin: 0;
+            padding: 0;
+            padding-right: 20px;
+            vertical-align: top;
+        }
+    }
+}
