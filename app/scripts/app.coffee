@@ -225,6 +225,27 @@ window.TimelineController = ($scope) ->
                 state: [
                 ]
             },
+            {
+                name: "Minutely",
+                bin_width: 60,
+                active: false,
+                epoch_raw: 123,
+                raw: [
+                    { start: 1379721600 + 60 * 0, end: 1379721600 + 60 * 1,  value: 2 },
+                    { start: 1379721600 + 60 * 1, end: 1379721600 + 60 * 2,  value: 3 },
+                    { start: 1379721600 + 60 * 2, end: 1379721600 + 60 * 3,  value: 4 },
+                    { start: 1379721600 + 60 * 3, end: 1379721600 + 60 * 4,  value: 5 },
+                    { start: 1379721600 + 60 * 4, end: 1379721600 + 60 * 5,  value: 6 },
+                    { start: 1379721600 + 60 * 5, end: 1379721600 + 60 * 6,  value: 7 },
+                    { start: 1379721600 + 60 * 6, end: 1379721600 + 60 * 7,  value: 8 },
+                    { start: 1379721600 + 60 * 7, end: 1379721600 + 60 * 8,  value: 9 },
+                    { start: 1379721600 + 60 * 8, end: 1379721600 + 60 * 9,  value: 10 },
+                    { start: 1379721600 + 60 * 9, end: 1379721600 + 60 * 10, value: 11 },
+                ],
+                epoch_state: 442,
+                state: [
+                ]
+            },
         ]
     }
 

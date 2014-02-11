@@ -217,30 +217,38 @@ angular
 
                     newActive = scope.available[newIdx]
 
+                    visibleSeconds = ngModel.$modelValue.visible_end - ngModel.$modelValue.visible_start
+                    selectedSeconds = ngModel.$modelValue.selected_end - ngModel.$modelValue.selected_start
                     binWidthRatio = scope.binWidths[newActive] / scope.binWidths[scope.active]
+                    binWidthRatio = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio)
+
+                    factor = if deltaIdx > 0 then 1 else -1
+                    deltaVisible = Math.ceil(binWidthRatio*visibleSeconds/2) * factor
+
+                    projectedStart = ngModel.$viewValue.selected_start + selectedSeconds / 2 - visibleSeconds / 2
+                    projectedEnd   = projectedStart + visibleSeconds
+
+                    projectedStart += deltaVisible
+                    projectedEnd  -= deltaVisible
+
+                    # Don't zoom if that would change the selected area
+                    return unless projectedStart <= ngModel.$viewValue.selected_start <= ngModel.$viewValue.selected_end <= projectedEnd
 
                     scope.active  = newActive
                     scope.visible = [newActive]
                     if newIdx - 1 of scope.available
                         scope.visible.push(scope.available[newIdx-1])
 
-                    if deltaIdx
-                        visibleSeconds = ngModel.$modelValue.visible_end - ngModel.$modelValue.visible_start
-                        binWidthRatio  = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio)
+                    ngModel.$viewValue.visible_start = projectedStart
+                    ngModel.$viewValue.visible_end   = projectedEnd
 
-                        factor = if deltaIdx > 0 then 1 else -1
-                        deltaVisible = Math.ceil(binWidthRatio*visibleSeconds/2) * factor
+                    # ngModel.$viewValue.selected_start = Math.max(ngModel.$viewValue.visible_start, ngModel.$viewValue.selected_start)
+                    # ngModel.$viewValue.selected_end   = Math.min(ngModel.$viewValue.visible_end,   ngModel.$viewValue.selected_end)
 
-                        ngModel.$viewValue.visible_start += deltaVisible
-                        ngModel.$viewValue.visible_end   -= deltaVisible
+                    if ngModel.$viewValue.selected_start > ngModel.$viewValue.selected_end
+                        ngModel.$viewValue.selected_start = ngModel.$viewValue.selected_end
 
-                        ngModel.$viewValue.selected_start = Math.max(ngModel.$viewValue.visible_start, ngModel.$viewValue.selected_start)
-                        ngModel.$viewValue.selected_end   = Math.min(ngModel.$viewValue.visible_end,   ngModel.$viewValue.selected_end)
-
-                        if ngModel.$viewValue.selected_start > ngModel.$viewValue.selected_end
-                            ngModel.$viewValue.selected_start = ngModel.$viewValue.selected_end
-
-                        ngModel.$setViewValue ngModel.$viewValue
+                    ngModel.$setViewValue ngModel.$viewValue
 
                     scope.onChange({'visibleTimePerspectives': scope.visible})
 

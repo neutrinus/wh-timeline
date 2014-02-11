@@ -190,7 +190,7 @@ class D3ChartView extends ChartView
         @processSkeleton()
 
         @redraw()
-        @$svg.fadeIn(@renderOptions.animDuration)
+        @$svg.finish().fadeIn(@renderOptions.animDuration)
 
     redraw: ->
 
@@ -202,7 +202,7 @@ class D3ChartView extends ChartView
         @processSkeleton()
 
         @redraw()
-        @$svg.fadeOut(@renderOptions.animDuration)
+        @$svg.finish().fadeOut(@renderOptions.animDuration)
 
 class D3HTMLChartView extends D3ChartView
 

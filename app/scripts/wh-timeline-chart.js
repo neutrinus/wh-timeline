@@ -285,7 +285,7 @@
       this.createYAxis();
       this.processSkeleton();
       this.redraw();
-      return this.$svg.fadeIn(this.renderOptions.animDuration);
+      return this.$svg.finish().fadeIn(this.renderOptions.animDuration);
     };
 
     D3ChartView.prototype.redraw = function() {};
@@ -297,7 +297,7 @@
       this.createYAxis();
       this.processSkeleton();
       this.redraw();
-      return this.$svg.fadeOut(this.renderOptions.animDuration);
+      return this.$svg.finish().fadeOut(this.renderOptions.animDuration);
     };
 
     return D3ChartView;

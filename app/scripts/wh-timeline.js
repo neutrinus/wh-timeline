@@ -239,7 +239,7 @@
           scope.available = null;
           scope.binWidths = null;
           scope["switch"] = function(how) {
-            var binWidthRatio, currentIdx, deltaIdx, deltaVisible, factor, newActive, newIdx, visibleSeconds;
+            var binWidthRatio, currentIdx, deltaIdx, deltaVisible, factor, newActive, newIdx, projectedEnd, projectedStart, selectedSeconds, visibleSeconds, _ref, _ref1;
             switch (how) {
               case '+':
               case 1:
@@ -264,26 +264,30 @@
               return;
             }
             newActive = scope.available[newIdx];
+            visibleSeconds = ngModel.$modelValue.visible_end - ngModel.$modelValue.visible_start;
+            selectedSeconds = ngModel.$modelValue.selected_end - ngModel.$modelValue.selected_start;
             binWidthRatio = scope.binWidths[newActive] / scope.binWidths[scope.active];
+            binWidthRatio = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio);
+            factor = deltaIdx > 0 ? 1 : -1;
+            deltaVisible = Math.ceil(binWidthRatio * visibleSeconds / 2) * factor;
+            projectedStart = ngModel.$viewValue.selected_start + selectedSeconds / 2 - visibleSeconds / 2;
+            projectedEnd = projectedStart + visibleSeconds;
+            projectedStart += deltaVisible;
+            projectedEnd -= deltaVisible;
+            if (!(((projectedStart <= (_ref1 = ngModel.$viewValue.selected_start) && _ref1 <= (_ref = ngModel.$viewValue.selected_end)) && _ref <= projectedEnd))) {
+              return;
+            }
             scope.active = newActive;
             scope.visible = [newActive];
             if (newIdx - 1 in scope.available) {
               scope.visible.push(scope.available[newIdx - 1]);
             }
-            if (deltaIdx) {
-              visibleSeconds = ngModel.$modelValue.visible_end - ngModel.$modelValue.visible_start;
-              binWidthRatio = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio);
-              factor = deltaIdx > 0 ? 1 : -1;
-              deltaVisible = Math.ceil(binWidthRatio * visibleSeconds / 2) * factor;
-              ngModel.$viewValue.visible_start += deltaVisible;
-              ngModel.$viewValue.visible_end -= deltaVisible;
-              ngModel.$viewValue.selected_start = Math.max(ngModel.$viewValue.visible_start, ngModel.$viewValue.selected_start);
-              ngModel.$viewValue.selected_end = Math.min(ngModel.$viewValue.visible_end, ngModel.$viewValue.selected_end);
-              if (ngModel.$viewValue.selected_start > ngModel.$viewValue.selected_end) {
-                ngModel.$viewValue.selected_start = ngModel.$viewValue.selected_end;
-              }
-              ngModel.$setViewValue(ngModel.$viewValue);
+            ngModel.$viewValue.visible_start = projectedStart;
+            ngModel.$viewValue.visible_end = projectedEnd;
+            if (ngModel.$viewValue.selected_start > ngModel.$viewValue.selected_end) {
+              ngModel.$viewValue.selected_start = ngModel.$viewValue.selected_end;
             }
+            ngModel.$setViewValue(ngModel.$viewValue);
             scope.onChange({
               'visibleTimePerspectives': scope.visible
             });
