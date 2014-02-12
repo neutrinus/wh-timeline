@@ -88,6 +88,22 @@
     padding: 0px;
   }
 }
+.wh-timeline .wh-timeline-warning {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 105;
+  display: none;
+  padding: 4px;
+  box-sizing: border-box;
+  width: 350px;
+  margin-left: -175px;
+  text-align: center;
+  color: #F00;
+  background: #FFF;
+  border: 2px solid #f00;
+  box-shadow: 0 0 15px #000;
+}
 .wh-timeline .wh-timeline-side {
   float: left;
   width: 65px;

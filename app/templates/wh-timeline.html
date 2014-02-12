@@ -1,16 +1,32 @@
 
 <div class="wh-timeline">
+    <div class="wh-timeline-warning" ng-blink="zoomRejected">
+        Ooops, zoom not possible, shrink your selection!
+    </div>
 
-    <!-- @TODO: Move visible/hidden to the main directive -->
-    <wh:timeline-selection-config ng-model="ngModel" is-active="adjustingSelection"></wh:timeline-selection-config>
+    <div class="wh-timeline-config container-fluid popover top"
+         ng-show="adjustingSelection"
+         ng-class="ngModel.is_period ? 'period' : 'point'">
+
+        <div class="arrow"></div>
+        <h3 class="popover-title">
+            Jakie ramy czasowe chcesz zaznaczyć?
+            <button class="wh-timeline-ngModel-close pull-right btn btn-xs btn-danger" ng-click="adjustingSelection=false">X</button>
+        </h3>
+        <div class="popover-content">
+            <wh:timeline-selection-config ng-model="ngModel"></wh:timeline-selection-config>
+        </div>
+    </div>
 
     <div class="wh-timeline-side">
         <button class="btn btn-default glyphicon glyphicon-wrench" ng-click="adjustingSelection = !adjustingSelection"></button>
-        <wh:timeline-perspective-picker ng-model="ngModel"></wh:timeline-perspective-picker>
+        <wh:timeline-perspective-picker
+                ng-model="ngModel"
+                on-zoom-rejected="zoomRejected=true"
+                ></wh:timeline-perspective-picker>
     </div>
 
     <div class="wh-timeline-widget">
-        <!-- @TODO: refactor to a separate directive maybe? -->
         <div class="overlay svg-area">
             <div class="y-axis-pane"></div>
             <div class="chart-pane">

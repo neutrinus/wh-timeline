@@ -1,64 +1,54 @@
 
-<div class="wh-timeline-config container-fluid popover top"
-     ng-show="isActive"
-     ng-class="ngModel.is_period ? 'period' : 'point'">
+<div>
+    <div class="row">
+        <div class="calendar from"
+             ng-class="ngModel.is_period ? 'col-xs-6' : 'col-xs-12'">
+            <h4 class="text-center">{{ ngModel.is_period ? 'Od' : 'Data' }}</h4>
 
-    <div class="arrow"></div>
-    <h3 class="popover-title">
-        Jakie ramy czasowe chcesz zaznaczyć?
-        <button class="wh-timeline-ngModel-close pull-right btn btn-xs btn-danger" ng-click="isActive=false">X</button>
-    </h3>
-    <div class="popover-content">
-        <div class="row">
-            <div class="calendar from"
-                 ng-class="ngModel.is_period ? 'col-xs-6' : 'col-xs-12'">
-                <h4 class="text-center">{{ ngModel.is_period ? 'Od' : 'Data' }}</h4>
-
-                <form class="form-inline" role="form">
-                    <label class="checkbox-inline">
-                        <input type="radio" ng-model="ngModel.is_start_tracked" ng-value="false" />
-                        Stój
-                    </label>
-                    <label class="checkbox-inline">
-                        <input type="radio" ng-model="ngModel.is_start_tracked" ng-value="true" />
-                        Podążaj
-                    </label>
-                </form>
-
-                <div ui-date ui-utc-unix-date ng-model="start"></div>
-                <timepicker-unix ng-model="start"></timepicker-unix>
-            </div>
-
-            <div class="calendar to col-xs-6" ng-show="ngModel.is_period">
-                <h4 class="text-center">Do</h4>
-
-                <form class="form-inline" role="form">
-                    <label class="checkbox-inline">
-                        <input type="radio" ng-model="ngModel.is_end_tracked" ng-value="false" />
-                        Stój
-                    </label>
-                    <label class="checkbox-inline">
-                        <input type="radio" ng-model="ngModel.is_end_tracked" ng-value="true" />
-                        Podążaj
-                    </label>
-                </form>
-
-                <div ui-date ui-utc-unix-date ng-model="end"></div>
-                <timepicker-unix ng-model="end"></timepicker-unix>
-            </div>
-        </div>
-        <div class="col-sm-6" ng-show="ngModel.is_period">
-            <form class="form-horizontal" role="form">
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Lub</label>
-                    <div class="col-sm-10">
-                        <select ng-model="predefinedChoice"
-                                ng-options="choice as choice.name for choice in ngModel.predefined_choices"
-                                class="form-control"
-                                ></select>
-                    </div>
-                </div>
+            <form class="form-inline" role="form">
+                <label class="checkbox-inline">
+                    <input type="radio" ng-model="ngModel.is_start_tracked" ng-value="false" />
+                    Stój
+                </label>
+                <label class="checkbox-inline">
+                    <input type="radio" ng-model="ngModel.is_start_tracked" ng-value="true" />
+                    Podążaj
+                </label>
             </form>
+
+            <div ui-date ui-utc-unix-date ng-model="start"></div>
+            <timepicker-unix ng-model="start"></timepicker-unix>
         </div>
+
+        <div class="calendar to col-xs-6" ng-show="ngModel.is_period">
+            <h4 class="text-center">Do</h4>
+
+            <form class="form-inline" role="form">
+                <label class="checkbox-inline">
+                    <input type="radio" ng-model="ngModel.is_end_tracked" ng-value="false" />
+                    Stój
+                </label>
+                <label class="checkbox-inline">
+                    <input type="radio" ng-model="ngModel.is_end_tracked" ng-value="true" />
+                    Podążaj
+                </label>
+            </form>
+
+            <div ui-date ui-utc-unix-date ng-model="end"></div>
+            <timepicker-unix ng-model="end"></timepicker-unix>
+        </div>
+    </div>
+    <div class="col-sm-6" ng-show="ngModel.is_period">
+        <form class="form-horizontal" role="form">
+            <div class="form-group">
+                <label class="col-sm-2 control-label">Lub</label>
+                <div class="col-sm-10">
+                    <select ng-model="predefinedChoice"
+                            ng-options="choice as choice.name for choice in ngModel.predefined_choices"
+                            class="form-control"
+                            ></select>
+                </div>
+            </div>
+        </form>
     </div>
 </div>

@@ -200,7 +200,8 @@
         replace: true,
         require: ['ngModel', '^whTimeline'],
         scope: {
-          ngModel: '='
+          ngModel: '=',
+          onZoomRejected: '&'
         },
         template: $templateCache.get('templates/wh-timeline-perspective-picker.html'),
         link: function(scope, element, attrs, controllers) {
@@ -302,6 +303,7 @@
             projectedStart += deltaVisible;
             projectedEnd -= deltaVisible;
             if (!(((projectedStart <= (_ref1 = ngModel.$viewValue.selected_start) && _ref1 <= (_ref = ngModel.$viewValue.selected_end)) && _ref <= projectedEnd))) {
+              scope.onZoomRejected();
               return;
             }
             scope.active = newActive;
@@ -335,7 +337,6 @@
         require: ['ngModel', '^whTimeline'],
         scope: {
           ngModel: '=',
-          isActive: '=',
           selectedStart: '=',
           selectedEnd: '=',
           isStartTracked: '=',
@@ -722,8 +723,7 @@
       }
     };
   }).directive('uiUtcUnixDate', function() {
-    var directive;
-    directive = {
+    return {
       require: 'ngModel',
       link: function(scope, element, attrs, modelCtrl) {
         modelCtrl.$formatters.push(function(unixTime) {
@@ -744,7 +744,22 @@
         });
       }
     };
-    return directive;
+  }).directive('ngBlink', function() {
+    return {
+      restrict: 'A',
+      scope: {
+        ngBlink: '='
+      },
+      link: function(scope, element, attr) {
+        return scope.$watch('ngBlink', function(newV, oldV) {
+          if (!newV || newV === oldV) {
+            return;
+          }
+          scope.ngBlink = false;
+          return element.fadeIn().delay(3500).fadeOut();
+        });
+      }
+    };
   }).directive('ngScroll', [
     '$parse', function($parse) {
       return function(scope, element, attr) {

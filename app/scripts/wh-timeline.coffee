@@ -186,7 +186,8 @@ angular
             replace: true
             require: ['ngModel', '^whTimeline']
             scope: {
-                ngModel:  '='
+                ngModel:        '=',
+                onZoomRejected: '&'
             }
             template: $templateCache.get('templates/wh-timeline-perspective-picker.html')
             link: (scope, element, attrs, controllers) ->
@@ -251,7 +252,9 @@ angular
                     projectedEnd  -= deltaVisible
 
                     # Don't zoom if that would change the selected area
-                    return unless projectedStart <= ngModel.$viewValue.selected_start <= ngModel.$viewValue.selected_end <= projectedEnd
+                    unless projectedStart <= ngModel.$viewValue.selected_start <= ngModel.$viewValue.selected_end <= projectedEnd
+                        scope.onZoomRejected()
+                        return
 
                     scope.active  = newActive
                     scope.visible = [newActive]
@@ -287,7 +290,6 @@ angular
                 require: ['ngModel', '^whTimeline']
                 scope: {
                     ngModel:  '='
-                    isActive: '='
 
                     selectedStart:  '=',
                     selectedEnd:    '=',
@@ -688,88 +690,98 @@ angular
 
     .directive('ngPressIn', ($parse) ->
 
-            mouseupCallbackNo = 0
-            mouseupCallbacks = {}
+        mouseupCallbackNo = 0
+        mouseupCallbacks = {}
 
-            $(document).on('mouseup', ->
-                for k,callback of mouseupCallbacks
-                    callback()
-                null
-            )
-
-            return {
-                priority: 100
-                link: (scope, element, attr) ->
-                    isPressedIn = false
-                    outCallbackNo = false
-
-                    if attr['ngPressIn']
-                        onPressStart = $parse(attr['ngPressIn'])
-                        element.bind 'mousedown', (event) ->
-                            isPressedIn = true
-                            scope.$apply -> onPressStart(scope, {$event: event})
-
-                    if attr['ngPressOut']
-                        outCallbackNo = ++mouseupCallbackNo
-                        onPressEnd = $parse(attr['ngPressOut'])
-                        mouseupCallbacks[outCallbackNo] = ->
-                            return unless isPressedIn
-                            isPressedIn = false
-
-                            scope.$apply -> onPressEnd(scope, {$event: event})
-
-                    scope.$on('$destroy', ->
-                        if outCallbackNo != false
-                            delete mouseupCallbacks[outCallbackNo]
-                    )
-            }
+        $(document).on('mouseup', ->
+            for k,callback of mouseupCallbacks
+                callback()
+            null
         )
 
+        return {
+            priority: 100
+            link: (scope, element, attr) ->
+                isPressedIn = false
+                outCallbackNo = false
 
-    .directive('uiUtcUnixDate', ->
-        directive =
-            require: 'ngModel'
-            link: (scope, element, attrs, modelCtrl) ->
+                if attr['ngPressIn']
+                    onPressStart = $parse(attr['ngPressIn'])
+                    element.bind 'mousedown', (event) ->
+                        isPressedIn = true
+                        scope.$apply -> onPressStart(scope, {$event: event})
 
-                modelCtrl.$formatters.push (unixTime) ->
-                    return unless unixTime
-                    utcDate = new Date(unixTime*1000)
-                    return new Date(
-                        utcDate.getUTCFullYear(),
-                        utcDate.getUTCMonth(),
-                        utcDate.getUTCDate(),
-                        utcDate.getUTCHours(),
-                        utcDate.getUTCMinutes(),
-                        utcDate.getUTCSeconds(),
-                        utcDate.getUTCMilliseconds()
-                    )
+                if attr['ngPressOut']
+                    outCallbackNo = ++mouseupCallbackNo
+                    onPressEnd = $parse(attr['ngPressOut'])
+                    mouseupCallbacks[outCallbackNo] = ->
+                        return unless isPressedIn
+                        isPressedIn = false
 
-                modelCtrl.$parsers.push (localDate) ->
-                    return unless localDate
-                    date = new Date(Date.UTC(
-                        localDate.getFullYear(),
-                        localDate.getMonth(),
-                        localDate.getDate(),
-                        localDate.getHours(),
-                        localDate.getMinutes(),
-                        localDate.getSeconds(),
-                        localDate.getMilliseconds()
-                    ))
-                    return parseInt((date.getTime()+'').slice(0,-3))
+                        scope.$apply -> onPressEnd(scope, {$event: event})
 
-        directive
+                scope.$on('$destroy', ->
+                    if outCallbackNo != false
+                        delete mouseupCallbacks[outCallbackNo]
+                )
+        }
     )
 
-    .directive('ngScroll', ['$parse', ($parse)  ->
-      return (scope, element, attr) ->
-       fn = $parse(attr.ngScroll);
+    .directive('uiUtcUnixDate', ->
+        require: 'ngModel'
+        link: (scope, element, attrs, modelCtrl) ->
 
-       element.bind('mousewheel', (event) ->
-        scope.$apply(->
-         fn(scope, {
-          $event: event
-         });
-        );
-       );
+            modelCtrl.$formatters.push (unixTime) ->
+                return unless unixTime
+                utcDate = new Date(unixTime*1000)
+                return new Date(
+                    utcDate.getUTCFullYear(),
+                    utcDate.getUTCMonth(),
+                    utcDate.getUTCDate(),
+                    utcDate.getUTCHours(),
+                    utcDate.getUTCMinutes(),
+                    utcDate.getUTCSeconds(),
+                    utcDate.getUTCMilliseconds()
+                )
+
+            modelCtrl.$parsers.push (localDate) ->
+                return unless localDate
+                date = new Date(Date.UTC(
+                    localDate.getFullYear(),
+                    localDate.getMonth(),
+                    localDate.getDate(),
+                    localDate.getHours(),
+                    localDate.getMinutes(),
+                    localDate.getSeconds(),
+                    localDate.getMilliseconds()
+                ))
+                return parseInt((date.getTime()+'').slice(0,-3))
+    )
+
+    .directive('ngBlink', ->
+        restrict: 'A'
+        scope: {
+            ngBlink: '='
+        }
+        link: (scope, element, attr) ->
+            scope.$watch('ngBlink', (newV, oldV) ->
+                return if not newV or newV == oldV
+                scope.ngBlink = false
+
+                element.fadeIn().delay(3500).fadeOut()
+            )
+     )
+
+    .directive('ngScroll', ['$parse', ($parse)  ->
+        return (scope, element, attr) ->
+            fn = $parse(attr.ngScroll);
+
+            element.bind('mousewheel', (event) ->
+                scope.$apply(->
+                    fn(scope, {
+                        $event: event
+                    });
+                );
+            );
      ]);
 
