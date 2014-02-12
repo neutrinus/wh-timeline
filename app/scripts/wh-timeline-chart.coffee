@@ -8,9 +8,10 @@ class SimpleStateRenderer extends StateRenderer
 
 class ChartDataModel
 
-    constructor: (perspective) ->
+    constructor: (perspective, binWidth) ->
         defaults =
             perspective: perspective        # Immutable
+            binWidth: binWidth              # Immutable
             visibleTimeInterval: null       # Mutable
 
             processedRawData: null          # Mutable
@@ -197,8 +198,8 @@ class D3ChartView extends ChartView
     unrender:  (renderOptions) ->
         @setRenderOptions(renderOptions)
         @data = []
-        @createXAxis()
-        @createYAxis()
+        #@createXAxis()
+        #@createYAxis()
         @processSkeleton()
 
         @redraw()
@@ -384,7 +385,9 @@ class ChartManager
                 elem.view.unrender($.extend(renderOptions, {
                     className: "inactive"
                 }))
+
         @doRenderCurrentState(activeCharts.reverse(), renderOptions)
+
 
     doRenderCurrentState: (activeCharts, renderOptions) ->
         for elem in activeCharts

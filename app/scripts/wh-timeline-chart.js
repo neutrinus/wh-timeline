@@ -32,10 +32,11 @@
   })(StateRenderer);
 
   ChartDataModel = (function() {
-    function ChartDataModel(perspective) {
+    function ChartDataModel(perspective, binWidth) {
       var defaults;
       defaults = {
         perspective: perspective,
+        binWidth: binWidth,
         visibleTimeInterval: null,
         processedRawData: null,
         processedStateData: null,
@@ -293,8 +294,6 @@
     D3ChartView.prototype.unrender = function(renderOptions) {
       this.setRenderOptions(renderOptions);
       this.data = [];
-      this.createXAxis();
-      this.createYAxis();
       this.processSkeleton();
       this.redraw();
       return this.$svg.finish().fadeOut(this.renderOptions.animDuration);

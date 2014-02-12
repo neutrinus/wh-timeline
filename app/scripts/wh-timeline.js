@@ -59,7 +59,11 @@
             return $.extend(true, {}, value);
           });
           scope.setTimePerspectives = function(newTimePerspectives) {
-            var chart, dataModel, elem, perspective, readyForRendering, _i, _len, _ref;
+            var binWidth, chart, dataModel, elem, perspective, readyForRendering, _i, _len, _ref;
+            if (angular.equals(newTimePerspectives, scope.visibleTimePerspectives)) {
+              return;
+            }
+            console.log('la grimas - prevent additional calls');
             readyForRendering = true;
             scope.visibleTimePerspectives = newTimePerspectives;
             _ref = scope.visibleTimePerspectives;
@@ -70,7 +74,8 @@
                 chart = elem.chart;
                 dataModel = chart.dataModel;
               } else {
-                dataModel = new ChartDataModel(perspective);
+                binWidth = 0;
+                dataModel = new ChartDataModel(perspective, findDataForTimePerspective(perspective, 'bin_width'));
                 chart = new Chart(dataModel);
                 chartManager.manageChart(chart, HistogramView);
               }
@@ -108,6 +113,9 @@
             });
           }), (function(current, previous) {
             var dataModel, elem, _i, _len, _ref;
+            ngModel.$modelValue.data.sort(function(e1, e2) {
+              return e1.bin_width < e2.bin_width;
+            });
             if (current === previous) {
               return;
             }
@@ -158,6 +166,29 @@
           this.chartManagerPromise = function() {
             return chartManagerDeferred.promise;
           };
+          this.setActiveTimePerspective = function(newActive) {
+            var idx, length, visible, _i, _ref;
+            visible = [newActive];
+            length = $scope.ngModel.data.length;
+            for (idx = _i = _ref = length - 1; _i >= 0; idx = _i += -1) {
+              if ($scope.ngModel.data[idx].name === newActive) {
+                if (idx < length) {
+                  visible.push($scope.ngModel.data[idx - 1].name);
+                }
+                break;
+              }
+            }
+            return $scope.setTimePerspectives(visible);
+          };
+          this.setVisibleTimePerspectives = function(visible) {
+            return $scope.setTimePerspectives(visible);
+          };
+          this.getVisibleTimePerspectives = function() {
+            return $scope.visibleTimePerspectives;
+          };
+          this.getData = function() {
+            return $scope.ngModel.data;
+          };
           return this;
         }
       };
@@ -169,7 +200,6 @@
         replace: true,
         require: ['ngModel', '^whTimeline'],
         scope: {
-          onChange: '&',
           ngModel: '='
         },
         template: $templateCache.get('templates/wh-timeline-perspective-picker.html'),
@@ -196,11 +226,8 @@
               return _results;
             })()).reverse();
             scope.active = activeEntries[0];
-            scope.visible = activeEntries;
             if (previouslyActive !== scope.active) {
-              scope.onChange({
-                'visibleTimePerspectives': scope.visible
-              });
+              whTimeline.setVisibleTimePerspectives(activeEntries);
             }
             scope.available = (function() {
               var _i, _len, _ref, _results;
@@ -288,9 +315,7 @@
               ngModel.$viewValue.selected_start = ngModel.$viewValue.selected_end;
             }
             ngModel.$setViewValue(ngModel.$viewValue);
-            scope.onChange({
-              'visibleTimePerspectives': scope.visible
-            });
+            return whTimeline.setVisibleTimePerspectives(scope.visible);
           };
           return element.closest('.wh-timeline').find('.chart-area').bind('mousewheel', function(e) {
             e.preventDefault();
@@ -310,7 +335,13 @@
         require: ['ngModel', '^whTimeline'],
         scope: {
           ngModel: '=',
-          isActive: '='
+          isActive: '=',
+          selectedStart: '=',
+          selectedEnd: '=',
+          isStartTracked: '=',
+          isEndTracked: '=',
+          visibleStart: '=',
+          visibleEnd: '='
         },
         template: $templateCache.get('templates/wh-timeline-selection-config.html'),
         link: function(scope, element, attrs, controllers) {
@@ -343,7 +374,7 @@
             return $.extend({}, modelValue);
           });
           ngModel.$parsers.push(function(viewValue) {
-            var tooLittleVisible, visibleSeconds, _ref, _ref1;
+            var binWidthPx, calcBinWidth, chunk, i, tooLittleVisible, visible, visibleArea, visibleSeconds, _i, _j, _len, _ref, _ref1, _ref2, _ref3, _ref4;
             if (!viewValue.is_period) {
               viewValue.selected_end = viewValue.selected_start;
             }
@@ -358,6 +389,33 @@
               }
               viewValue.visible_start = Math.min(viewValue.selected_start, viewValue.visible_end - visibleSeconds);
               viewValue.visible_end = Math.max(viewValue.selected_end, viewValue.visible_start + visibleSeconds);
+            }
+            visibleSeconds = viewValue.visible_end - viewValue.visible_start;
+            visibleArea = whTimeline.getChartManager().viewModel.dataArea.width;
+            calcBinWidth = function(binWidth) {
+              var binWidthRatio;
+              binWidthRatio = visibleSeconds / binWidth;
+              return visibleArea / binWidthRatio;
+            };
+            binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth);
+            if (binWidthPx < 10) {
+              ngModel.$viewValue.data.sort(function(e1, e2) {
+                return e1.bin_width < e2.bin_width;
+              });
+              for (i = _i = _ref2 = ngModel.$viewValue.data.length - 1; _i >= 0; i = _i += -1) {
+                chunk = ngModel.$viewValue.data[i];
+                binWidthPx = calcBinWidth(chunk.bin_width);
+                if (binWidthPx >= 10) {
+                  break;
+                }
+              }
+              whTimeline.setActiveTimePerspective(chunk.name);
+              visible = whTimeline.getVisibleTimePerspectives();
+              _ref3 = viewValue.data;
+              for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
+                chunk = _ref3[_j];
+                chunk.active = (_ref4 = chunk.name, __indexOf.call(visible, _ref4) >= 0);
+              }
             }
             scope.start = viewValue.selected_start;
             scope.end = viewValue.selected_end;

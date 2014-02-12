@@ -46,7 +46,6 @@ angular
 
                     # }}}
 
-
                     # -------------------------
 
                     findDataForTimePerspective = (perspective, dataType) ->
@@ -65,6 +64,9 @@ angular
                     # -------------------------
 
                     scope.setTimePerspectives = (newTimePerspectives) ->
+                        return if angular.equals newTimePerspectives, scope.visibleTimePerspectives
+                        console.log 'la grimas - prevent additional calls'
+
                         readyForRendering = true
                         scope.visibleTimePerspectives = newTimePerspectives
                         for perspective in scope.visibleTimePerspectives
@@ -73,7 +75,8 @@ angular
                                 chart = elem.chart
                                 dataModel = chart.dataModel
                             else
-                                dataModel = new ChartDataModel(perspective)
+                                binWidth = 0
+                                dataModel = new ChartDataModel(perspective, findDataForTimePerspective(perspective, 'bin_width'))
 
                                 chart = new Chart(dataModel)
                                 chartManager.manageChart(chart, HistogramView)
@@ -82,6 +85,7 @@ angular
 
                         chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval())
                         chartManager.setActiveCharts(scope.visibleTimePerspectives)
+
                         chartManager.renderCurrentState()
 
                     # --------------------------
@@ -104,6 +108,9 @@ angular
                     scope.$watch((
                         -> (elem.epoch_state+elem.epoch_raw for elem in ngModel.$modelValue.data).reduce (t,s) -> t+s
                     ), ((current, previous) ->
+                        # Sort by bin width descending - critical!
+                        ngModel.$modelValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
+
                         return if current == previous
 
                         for elem in chartManager.getActiveCharts()
@@ -153,6 +160,21 @@ angular
                     @getChartManager = -> $scope.chartManager
 
                     @chartManagerPromise = -> chartManagerDeferred.promise
+                    @setActiveTimePerspective = (newActive) ->
+                        visible = [newActive]
+
+                        length = $scope.ngModel.data.length
+                        for idx in [length-1..0] by -1
+                            if $scope.ngModel.data[idx].name == newActive
+                                if idx < length
+                                    visible.push $scope.ngModel.data[idx-1].name
+                                break
+
+                        $scope.setTimePerspectives visible
+
+                    @setVisibleTimePerspectives = (visible) -> $scope.setTimePerspectives visible
+                    @getVisibleTimePerspectives = -> $scope.visibleTimePerspectives
+                    @getData = -> $scope.ngModel.data
                     return @
             }
         )
@@ -164,7 +186,6 @@ angular
             replace: true
             require: ['ngModel', '^whTimeline']
             scope: {
-                onChange: '&',
                 ngModel:  '='
             }
             template: $templateCache.get('templates/wh-timeline-perspective-picker.html')
@@ -179,11 +200,9 @@ angular
                     previouslyActive = scope.active
                     activeEntries = (chunk.name for chunk in value.data when chunk.active).reverse()
 
-                    scope.active    = activeEntries[0]
-                    scope.visible   = activeEntries
-
+                    scope.active = activeEntries[0]
                     if previouslyActive != scope.active
-                        scope.onChange({'visibleTimePerspectives': scope.visible})
+                        whTimeline.setVisibleTimePerspectives activeEntries
 
                     scope.available = (chunk.name for chunk in value.data)
                     scope.binWidths = to_hash([chunk.name, chunk.bin_width] for chunk in value.data)
@@ -242,17 +261,13 @@ angular
                     ngModel.$viewValue.visible_start = projectedStart
                     ngModel.$viewValue.visible_end   = projectedEnd
 
-                    # ngModel.$viewValue.selected_start = Math.max(ngModel.$viewValue.visible_start, ngModel.$viewValue.selected_start)
-                    # ngModel.$viewValue.selected_end   = Math.min(ngModel.$viewValue.visible_end,   ngModel.$viewValue.selected_end)
-
                     if ngModel.$viewValue.selected_start > ngModel.$viewValue.selected_end
                         ngModel.$viewValue.selected_start = ngModel.$viewValue.selected_end
 
                     ngModel.$setViewValue ngModel.$viewValue
 
-                    scope.onChange({'visibleTimePerspectives': scope.visible})
+                    whTimeline.setVisibleTimePerspectives scope.visible
 
-                    return
 
                 element.closest('.wh-timeline').find('.chart-area').bind('mousewheel', (e) ->
                     e.preventDefault()
@@ -273,6 +288,15 @@ angular
                 scope: {
                     ngModel:  '='
                     isActive: '='
+
+                    selectedStart:  '=',
+                    selectedEnd:    '=',
+
+                    isStartTracked: '=',
+                    isEndTracked:   '=',
+
+                    visibleStart:   '=',
+                    visibleEnd:     '=',
                 }
                 template: $templateCache.get('templates/wh-timeline-selection-config.html')
                 link: (scope, element, attrs, controllers) ->
@@ -308,7 +332,7 @@ angular
                         unless viewValue.is_period
                             viewValue.selected_end = viewValue.selected_start
 
-                        # enlarge visible area of needed {{{
+                        # Enlarge visible area of needed {{{
                         visibleSeconds = viewValue.visible_end - viewValue.visible_start
 
                         tooLittleVisible = not (viewValue.visible_start <= viewValue.selected_start <= viewValue.selected_end <= viewValue.visible_end)
@@ -322,6 +346,31 @@ angular
 
                             viewValue.visible_start = Math.min(viewValue.selected_start, viewValue.visible_end   - visibleSeconds)
                             viewValue.visible_end   = Math.max(viewValue.selected_end,   viewValue.visible_start + visibleSeconds)
+                        # }}}
+
+                        # Change the time perspective too much bins would be visible after adjusting the selection {{{
+                        visibleSeconds = viewValue.visible_end - viewValue.visible_start
+
+                        visibleArea = whTimeline.getChartManager().viewModel.dataArea.width
+                        calcBinWidth = (binWidth) ->
+                            binWidthRatio = visibleSeconds / binWidth
+                            return visibleArea / binWidthRatio
+
+                        binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth)
+
+                        if binWidthPx < 10
+                            ngModel.$viewValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
+                            for i in [ngModel.$viewValue.data.length - 1..0] by -1
+                                chunk = ngModel.$viewValue.data[i]
+                                binWidthPx = calcBinWidth(chunk.bin_width)
+                                if binWidthPx >= 10
+                                    break
+
+                            whTimeline.setActiveTimePerspective chunk.name
+                            visible = whTimeline.getVisibleTimePerspectives()
+                            for chunk in viewValue.data
+                                chunk.active = chunk.name in visible
+
                         # }}}
 
                         scope.start = viewValue.selected_start
@@ -555,7 +604,7 @@ angular
 
                                 #scope.ngModel.selected_start = ngModel.$viewValue.selected_start
                                 #scope.ngModel.selected_end = ngModel.$viewValue.selected_end
-                                
+
                                 ngModel.$setViewValue($.extend {}, ngModel.$viewValue)
                                 ngModel.$render()
 
