@@ -41,8 +41,14 @@
     }
 
     .ui-datepicker-inline,
-    timepicker-unix > table {
+    timepicker-unix > table,
+    datepicker-inputs > table {
         margin: 0 auto;
+    }
+
+    datepicker-inputs > table {
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
     .ui-datepicker {
@@ -75,13 +81,13 @@
     }
 
     .wh-timeline-config {
-        .wh-timeline-config(630px, 482px);
+        .wh-timeline-config(630px, 522px);
     }
 
     @media screen and (max-width: 800px) ,
            screen and (max-height: 900px) {
         .wh-timeline-config {
-            .wh-timeline-config(440px, 410px);
+            .wh-timeline-config(440px, 460px);
             .ui-datepicker {
                 width: 14em;
                 height: 177px;
@@ -89,6 +95,16 @@
                 td .ui-state-default {
                     padding: 0px;
                 }
+            }
+
+            datepicker-inputs > table {
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+
+            input {
+                height: auto;
+                padding: 2px 12px;
             }
         }
     }

@@ -63,7 +63,6 @@
             if (angular.equals(newTimePerspectives, scope.visibleTimePerspectives)) {
               return;
             }
-            console.log('la grimas - prevent additional calls');
             readyForRendering = true;
             scope.visibleTimePerspectives = newTimePerspectives;
             _ref = scope.visibleTimePerspectives;
@@ -744,7 +743,88 @@
         });
       }
     };
-  }).directive('ngBlink', function() {
+  }).directive('uiUnixDate', function() {
+    return {
+      require: 'ngModel',
+      link: function(scope, element, attrs, modelCtrl) {
+        modelCtrl.$formatters.push(function(unixTime) {
+          if (!unixTime) {
+            return;
+          }
+          return new Date(unixTime * 1000);
+        });
+        return modelCtrl.$parsers.push(function(utcDate) {
+          if (!utcDate) {
+            return;
+          }
+          return parseInt((utcDate.getTime() + '').slice(0, -3));
+        });
+      }
+    };
+  }).directive('datepickerInputs', [
+    '$templateCache', '$log', function($templateCache, $log) {
+      return {
+        restrict: 'E',
+        require: 'ngModel',
+        scope: {
+          ngModel: '='
+        },
+        template: $templateCache.get('templates/datepicker-inputs.html'),
+        link: function(scope, element, attrs, ngModel) {
+          var pad, updateScope;
+          pad = function(value) {
+            return ("0" + value).slice(-2);
+          };
+          ngModel.$render = function() {
+            return updateScope(ngModel.$viewValue);
+          };
+          updateScope = function(date) {
+            scope.Years = "" + date.getUTCFullYear();
+            scope.Months = "" + pad(date.getUTCMonth() + 1);
+            return scope.Days = "" + pad(date.getUTCDate());
+          };
+          scope.invalid = {
+            years: false,
+            months: false,
+            days: false
+          };
+          return scope.updateDate = function() {
+            var date, days, k, months, time, v, years;
+            years = parseInt(scope.Years, 10);
+            months = parseInt(scope.Months, 10);
+            days = parseInt(scope.Days, 10);
+            scope.invalid.years = !((1 <= years && years <= 3000));
+            scope.invalid.months = !((1 <= months && months <= 12));
+            scope.invalid.days = !((1 <= days && days <= 31));
+            if (((function() {
+              var _ref, _results;
+              _ref = scope.invalid;
+              _results = [];
+              for (k in _ref) {
+                v = _ref[k];
+                if (v) {
+                  _results.push(v);
+                }
+              }
+              return _results;
+            })()).length) {
+              ngModel.$setValidity('time', false);
+              return;
+            }
+            time = Date.UTC(years, months - 1, days, ngModel.$viewValue.getUTCHours(), ngModel.$viewValue.getUTCMinutes(), ngModel.$viewValue.getUTCSeconds(), ngModel.$viewValue.getUTCMilliseconds());
+            if (!time) {
+              ngModel.$setValidity('time', false);
+              return;
+            }
+            ngModel.$setValidity('time', true);
+            date = new Date(time);
+            updateScope(date);
+            return ngModel.$setViewValue(date);
+          };
+        }
+      };
+    }
+  ]).directive('ngBlink', function() {
     return {
       restrict: 'A',
       scope: {

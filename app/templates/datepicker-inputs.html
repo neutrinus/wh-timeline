@@ -1,0 +1,17 @@
+<table>
+    <tbody>
+    <tr>
+        <td style="width:100px;" class="form-group" ng-class="{'has-error': invalid.years}">
+            <input ng-model="Years" ng-blur="updateDate()" type="text" class="form-control text-center year" ng-mousewheel="mouseWheelYears()" maxlength="4">
+        </td>
+        <td> - </td>
+        <td style="width:50px;" class="form-group" ng-class="{'has-error': invalid.months}">
+            <input ng-model="Months" ng-blur="updateDate()" type="text" class="form-control text-center month" ng-mousewheel="mouseWheelMonths()" maxlength="2">
+        </td>
+        <td> - </td>
+        <td style="width:50px;" class="form-group" ng-class="{'has-error': invalid.days}">
+            <input ng-model="Days" ng-blur="updateDate()" type="text" class="form-control text-center day" ng-mousewheel="mouseWheelDays()" maxlength="2">
+        </td>
+    </tr>
+    </tbody>
+</table>

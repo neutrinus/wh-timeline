@@ -757,6 +757,83 @@ angular
                 return parseInt((date.getTime()+'').slice(0,-3))
     )
 
+    .directive('uiUnixDate', ->
+        require: 'ngModel'
+        link: (scope, element, attrs, modelCtrl) ->
+
+            modelCtrl.$formatters.push (unixTime) ->
+                return unless unixTime
+                return new Date(unixTime*1000)
+
+            modelCtrl.$parsers.push (utcDate) ->
+                return unless utcDate
+                return parseInt((utcDate.getTime()+'').slice(0,-3))
+    )
+
+    .directive('datepickerInputs',
+        ['$templateCache', '$log', ($templateCache, $log) -> {
+            restrict: 'E'
+            require: 'ngModel'
+            scope: {
+                ngModel: '=',
+            }
+            template: $templateCache.get('templates/datepicker-inputs.html')
+            link: (scope, element, attrs, ngModel) ->
+
+                pad = (value) -> ("0"+value).slice(-2)
+
+                ngModel.$render = ->
+                    updateScope(ngModel.$viewValue)
+
+                updateScope = (date) ->
+                    scope.Years  = ""+date.getUTCFullYear()
+                    scope.Months = ""+pad(date.getUTCMonth()+1)
+                    scope.Days   = ""+pad(date.getUTCDate())
+
+                scope.invalid = {
+                    years: false,
+                    months: false
+                    days: false
+                }
+
+                scope.updateDate = ->
+
+                    years = parseInt(scope.Years, 10)
+                    months = parseInt(scope.Months, 10)
+                    days = parseInt(scope.Days, 10)
+
+                    scope.invalid.years  = not (1 <= years <= 3000)
+                    scope.invalid.months = not (1 <= months <= 12)
+                    scope.invalid.days   = not (1 <= days <= 31)
+
+                    if (v for k,v of scope.invalid when v).length
+                        ngModel.$setValidity('time', false)
+                        return
+
+                    time = Date.UTC(
+                        years,
+                        months-1,
+                        days,
+                        ngModel.$viewValue.getUTCHours(),
+                        ngModel.$viewValue.getUTCMinutes(),
+                        ngModel.$viewValue.getUTCSeconds(),
+                        ngModel.$viewValue.getUTCMilliseconds()
+                    )
+
+                    unless time
+                        ngModel.$setValidity('time', false)
+                        return
+
+                    ngModel.$setValidity('time', true)
+
+                    date = new Date(time)
+
+                    updateScope(date)
+                    ngModel.$setViewValue(date)
+
+        }]
+    )
+
     .directive('ngBlink', ->
         restrict: 'A'
         scope: {

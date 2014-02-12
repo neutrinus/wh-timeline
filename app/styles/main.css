@@ -24,12 +24,12 @@
 .wh-timeline .wh-timeline-config {
   position: absolute;
   z-index: 100000;
-  top: -487px;
+  top: -527px;
   left: 50%;
   display: block;
   width: 630px;
   max-width: 630px;
-  height: 482px;
+  height: 522px;
   margin-left: -315px;
 }
 .wh-timeline .wh-timeline-config.point {
@@ -44,8 +44,13 @@
   box-sizing: border-box;
 }
 .wh-timeline .wh-timeline-config .ui-datepicker-inline,
-.wh-timeline .wh-timeline-config timepicker-unix > table {
+.wh-timeline .wh-timeline-config timepicker-unix > table,
+.wh-timeline .wh-timeline-config datepicker-inputs > table {
   margin: 0 auto;
+}
+.wh-timeline .wh-timeline-config datepicker-inputs > table {
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 .wh-timeline .wh-timeline-config .ui-datepicker {
   height: 237px;
@@ -54,12 +59,12 @@
   .wh-timeline .wh-timeline-config {
     position: absolute;
     z-index: 100000;
-    top: -415px;
+    top: -465px;
     left: 50%;
     display: block;
     width: 440px;
     max-width: 440px;
-    height: 410px;
+    height: 460px;
     margin-left: -220px;
   }
   .wh-timeline .wh-timeline-config.point {
@@ -74,8 +79,13 @@
     box-sizing: border-box;
   }
   .wh-timeline .wh-timeline-config .ui-datepicker-inline,
-  .wh-timeline .wh-timeline-config timepicker-unix > table {
+  .wh-timeline .wh-timeline-config timepicker-unix > table,
+  .wh-timeline .wh-timeline-config datepicker-inputs > table {
     margin: 0 auto;
+  }
+  .wh-timeline .wh-timeline-config datepicker-inputs > table {
+    margin-top: 10px;
+    margin-bottom: 10px;
   }
   .wh-timeline .wh-timeline-config .ui-datepicker {
     height: 237px;
@@ -86,6 +96,14 @@
   }
   .wh-timeline .wh-timeline-config .ui-datepicker td .ui-state-default {
     padding: 0px;
+  }
+  .wh-timeline .wh-timeline-config datepicker-inputs > table {
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+  .wh-timeline .wh-timeline-config input {
+    height: auto;
+    padding: 2px 12px;
   }
 }
 .wh-timeline .wh-timeline-warning {
