@@ -1,1 +1,1 @@
-/var/www/WhiteHats/MonitOwl/Timeline/dist/scripts/templates.js
+../../dist/scripts/templates.js
