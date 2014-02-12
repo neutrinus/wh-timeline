@@ -65,7 +65,6 @@ angular
 
                     scope.setTimePerspectives = (newTimePerspectives) ->
                         return if angular.equals newTimePerspectives, scope.visibleTimePerspectives
-                        console.log 'la grimas - prevent additional calls'
 
                         readyForRendering = true
                         scope.visibleTimePerspectives = newTimePerspectives
