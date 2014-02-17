@@ -76,17 +76,6 @@ angular
 
                     # -------------------------
 
-
-                    ###
-                    ngModel.$formatters.unshift (value) ->
-                        return $.extend(true, {}, value)
-
-                    ngModel.$parsers.push (value) ->
-                        return $.extend(true, {}, value)
-                    ###
-
-                    # -------------------------
-
                     scope.setTimePerspectives = (newTimePerspectives) ->
                         return if angular.equals newTimePerspectives, scope.visibleTimePerspectives
 
@@ -116,6 +105,7 @@ angular
                     # --------------------------
 
                     scope.chartManager = chartManager = new D3ChartManager(new ChartViewModel(element.find('.wh-timeline-widget .svg-area')))
+
                     # We need to recalculate visible time interval before rendering the chart
                     chartManager.beforeRender = -> scope.$apply() if not scope.$$phase and not scope.$root.$$phase
                     chartManagerDeferred.resolve(chartManager)
@@ -124,9 +114,6 @@ angular
                         chartManager.refreshPaneDimensions()
                         scope.$apply()
                     )
-
-                    #scope.$watch (-> ngModel.$viewValue.timePerspective.visible), (visiblePerspectives) ->
-                    #    updateChartManager(visiblePerspectives)
 
                     scope.$watch((
                         -> (elem.epoch_state+elem.epoch_raw for elem in ngModel.$modelValue.data).reduce (t,s) -> t+s
@@ -585,7 +572,7 @@ angular
                                 selectionElementSelector: '.selection-area'
                             })
                         })
-                        isPeriod: scope.isPeriod
+                        isPeriod: scope.ngModel.is_period
                     })
 
                     whTimeline.chartManagerPromise().then((chartManager) ->

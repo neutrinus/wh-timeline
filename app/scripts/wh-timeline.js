@@ -81,14 +81,6 @@
               }
             }
           };
-          /*
-          ngModel.$formatters.unshift (value) ->
-              return $.extend(true, {}, value)
-          
-          ngModel.$parsers.push (value) ->
-              return $.extend(true, {}, value)
-          */
-
           scope.setTimePerspectives = function(newTimePerspectives) {
             var binWidth, chart, dataModel, elem, perspective, readyForRendering, _i, _len, _ref;
             if (angular.equals(newTimePerspectives, scope.visibleTimePerspectives)) {
@@ -590,7 +582,7 @@
                 selectionElementSelector: '.selection-area'
               })
             }),
-            isPeriod: scope.isPeriod
+            isPeriod: scope.ngModel.is_period
           });
           whTimeline.chartManagerPromise().then(function(chartManager) {
             scope.selectionManager.addPlugin(new StickySelectionPlugin(chartManager, {
