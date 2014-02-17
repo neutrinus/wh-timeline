@@ -135,9 +135,6 @@
             });
           }), (function(current, previous) {
             var dataModel, elem, _i, _len, _ref;
-            ngModel.$modelValue.data.sort(function(e1, e2) {
-              return e1.bin_width < e2.bin_width;
-            });
             if (current === previous) {
               return;
             }
@@ -191,13 +188,14 @@
             return chartManagerDeferred.promise;
           };
           this.setActiveTimePerspective = function(newActive) {
-            var idx, length, visible, _i, _ref;
+            var binPerspectiveData, idx, length, visible, _i, _ref;
             visible = [newActive];
-            length = $scope.ngModel.data.length;
+            binPerspectiveData = this.getSortedPerspectiveDetails();
+            length = binPerspectiveData.length;
             for (idx = _i = _ref = length - 1; _i >= 0; idx = _i += -1) {
-              if ($scope.ngModel.data[idx].name === newActive) {
+              if (binPerspectiveData[idx].name === newActive) {
                 if (idx < length) {
-                  visible.push($scope.ngModel.data[idx - 1].name);
+                  visible.push(binPerspectiveData[idx - 1].name);
                 }
                 break;
               }
@@ -212,6 +210,27 @@
           };
           this.getData = function() {
             return $scope.ngModel.data;
+          };
+          this.getSortedPerspectiveDetails = function() {
+            var binPerspectiveData, item;
+            binPerspectiveData = (function() {
+              var _i, _len, _ref, _results;
+              _ref = $scope.ngModel.data;
+              _results = [];
+              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                item = _ref[_i];
+                _results.push({
+                  bin_width: item.bin_width,
+                  name: item.name,
+                  active: item.active
+                });
+              }
+              return _results;
+            })();
+            binPerspectiveData.sort(function(e1, e2) {
+              return e1.bin_width < e2.bin_width;
+            });
+            return binPerspectiveData;
           };
           this.render = function() {
             this.getChartManager().renderCurrentState();
@@ -236,18 +255,15 @@
           var ngModel, whTimeline;
           ngModel = controllers[0], whTimeline = controllers[1];
           ngModel.$formatters.unshift(function(modelValue) {
-            var activeEntries, chunk, previouslyActive, viewValue;
+            var activeEntries, binPerspectiveData, chunk, previouslyActive, viewValue;
             viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
-            modelValue.data.sort(function(e1, e2) {
-              return e1.bin_width < e2.bin_width;
-            });
+            binPerspectiveData = whTimeline.getSortedPerspectiveDetails();
             previouslyActive = scope.active;
             activeEntries = ((function() {
-              var _i, _len, _ref, _results;
-              _ref = modelValue.data;
+              var _i, _len, _results;
               _results = [];
-              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                chunk = _ref[_i];
+              for (_i = 0, _len = binPerspectiveData.length; _i < _len; _i++) {
+                chunk = binPerspectiveData[_i];
                 if (chunk.active) {
                   _results.push(chunk.name);
                 }
@@ -259,21 +275,19 @@
               whTimeline.setVisibleTimePerspectives(activeEntries);
             }
             scope.available = (function() {
-              var _i, _len, _ref, _results;
-              _ref = modelValue.data;
+              var _i, _len, _results;
               _results = [];
-              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                chunk = _ref[_i];
+              for (_i = 0, _len = binPerspectiveData.length; _i < _len; _i++) {
+                chunk = binPerspectiveData[_i];
                 _results.push(chunk.name);
               }
               return _results;
             })();
             scope.binWidths = to_hash((function() {
-              var _i, _len, _ref, _results;
-              _ref = modelValue.data;
+              var _i, _len, _results;
               _results = [];
-              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                chunk = _ref[_i];
+              for (_i = 0, _len = binPerspectiveData.length; _i < _len; _i++) {
+                chunk = binPerspectiveData[_i];
                 _results.push([chunk.name, chunk.bin_width]);
               }
               return _results;
@@ -403,7 +417,7 @@
             return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
           });
           ngModel.$parsers.push(function(viewValue) {
-            var binWidthPx, calcBinWidth, chunk, i, tooLittleVisible, visible, visibleArea, visibleSeconds, _i, _j, _len, _ref, _ref1, _ref2, _ref3, _ref4;
+            var binPerspectiveData, binWidthPx, calcBinWidth, chunk, i, tooLittleVisible, visible, visibleArea, visibleSeconds, _i, _j, _len, _ref, _ref1, _ref2, _ref3, _ref4;
             if (!viewValue.is_period) {
               viewValue.selected_end = viewValue.selected_start;
             }
@@ -428,11 +442,9 @@
             };
             binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth);
             if (binWidthPx < 10) {
-              ngModel.$modelValue.data.sort(function(e1, e2) {
-                return e1.bin_width < e2.bin_width;
-              });
-              for (i = _i = _ref2 = ngModel.$modelValue.data.length - 1; _i >= 0; i = _i += -1) {
-                chunk = ngModel.$modelValue.data[i];
+              binPerspectiveData = whTimeline.getBinPerspectiveData();
+              for (i = _i = _ref2 = binPerspectiveData.length - 1; _i >= 0; i = _i += -1) {
+                chunk = binPerspectiveData[i];
                 binWidthPx = calcBinWidth(chunk.bin_width);
                 if (binWidthPx >= 10) {
                   break;

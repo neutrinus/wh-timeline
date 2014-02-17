@@ -258,7 +258,6 @@ class HistogramView extends D3HTMLChartView
             @dataset._calcWidth = tv(next) - tv(prev) - 1 # there always is next tick
             return @dataset._calcWidth+"px"
 
-
         bar = @svg.selectAll(".bar")
             .data(@data, (d) -> d.date)
 
@@ -296,7 +295,7 @@ class HistogramView extends D3HTMLChartView
                 #.style("width",  calcWidthFn)
                 .style("top",     view.renderOptions.viewModel.dataArea.height+"px")
                 .style("height", "0px")
-                .remove();
+                .remove()
 
         ###
         bar.append("text")

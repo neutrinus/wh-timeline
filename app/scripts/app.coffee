@@ -77,16 +77,22 @@ window.TimelineController = ($scope) ->
         #{ start: 1377302400, end: 1377907200, value: 10.000000 },
 
     $.get('/scripts/weekly.json', (response) ->
-        $scope.timelineConfig.data[2].raw = response
-        ++$scope.timelineConfig.data[2].epoch_raw
+        for chunk in $scope.timelineConfig.data
+            if chunk.name == "Weekly"
+                chunk.raw = response
+                chunk.epoch_raw
+                break
         $scope.$apply()
     )
 
     a = {}
 
     $.get('/scripts/hourly.json', (response) ->
-        $scope.timelineConfig.data[4].raw = response
-        ++$scope.timelineConfig.data[4].epoch_raw
+        for chunk in $scope.timelineConfig.data
+            if chunk.name == "Hourly"
+                chunk.raw = response
+                chunk.epoch_raw
+                break
         $scope.$apply()
     )
 

@@ -118,9 +118,6 @@ angular
                     scope.$watch((
                         -> (elem.epoch_state+elem.epoch_raw for elem in ngModel.$modelValue.data).reduce (t,s) -> t+s
                     ), ((current, previous) ->
-                        # Sort by bin width descending - critical!
-                        ngModel.$modelValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
-
                         return if current == previous
 
                         for elem in chartManager.getActiveCharts()
@@ -168,11 +165,12 @@ angular
                     @setActiveTimePerspective = (newActive) ->
                         visible = [newActive]
 
-                        length = $scope.ngModel.data.length
+                        binPerspectiveData = @getSortedPerspectiveDetails()
+                        length = binPerspectiveData.length
                         for idx in [length-1..0] by -1
-                            if $scope.ngModel.data[idx].name == newActive
+                            if binPerspectiveData[idx].name == newActive
                                 if idx < length
-                                    visible.push $scope.ngModel.data[idx-1].name
+                                    visible.push binPerspectiveData[idx-1].name
                                 break
 
                         $scope.setTimePerspectives visible
@@ -180,6 +178,15 @@ angular
                     @setVisibleTimePerspectives = (visible) -> $scope.setTimePerspectives visible
                     @getVisibleTimePerspectives = -> $scope.visibleTimePerspectives
                     @getData = -> $scope.ngModel.data
+                    @getSortedPerspectiveDetails = ->
+                        binPerspectiveData = ({
+                            bin_width: item.bin_width,
+                            name:      item.name,
+                            active:    item.active
+                        } for item in $scope.ngModel.data)
+                        binPerspectiveData.sort (e1,e2) -> e1.bin_width < e2.bin_width
+                        return binPerspectiveData
+
                     @render = ->
                         @getChartManager().renderCurrentState()
                         $scope.updateStateData()
@@ -204,18 +211,17 @@ angular
                 ngModel.$formatters.unshift (modelValue) ->
                     viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
-                    # @TODO: Remove
-                    modelValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
+                    binPerspectiveData = whTimeline.getSortedPerspectiveDetails()
 
                     previouslyActive = scope.active
-                    activeEntries = (chunk.name for chunk in modelValue.data when chunk.active).reverse()
+                    activeEntries = (chunk.name for chunk in binPerspectiveData when chunk.active).reverse()
 
                     scope.active = activeEntries[0]
                     if previouslyActive != scope.active
                         whTimeline.setVisibleTimePerspectives activeEntries
 
-                    scope.available = (chunk.name for chunk in modelValue.data)
-                    scope.binWidths = to_hash([chunk.name, chunk.bin_width] for chunk in modelValue.data)
+                    scope.available = (chunk.name for chunk in binPerspectiveData)
+                    scope.binWidths = to_hash([chunk.name, chunk.bin_width] for chunk in binPerspectiveData)
 
                     return viewValue
 
@@ -267,6 +273,7 @@ angular
 
                     scope.active  = newActive
                     scope.visible = [newActive]
+
                     if newIdx - 1 of scope.available
                         scope.visible.push(scope.available[newIdx-1])
 
@@ -370,9 +377,9 @@ angular
                         binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth)
 
                         if binWidthPx < 10
-                            ngModel.$modelValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
-                            for i in [ngModel.$modelValue.data.length - 1..0] by -1
-                                chunk = ngModel.$modelValue.data[i]
+                            binPerspectiveData = whTimeline.getBinPerspectiveData()
+                            for i in [binPerspectiveData.length - 1..0] by -1
+                                chunk = binPerspectiveData[i]
                                 binWidthPx = calcBinWidth(chunk.bin_width)
                                 if binWidthPx >= 10
                                     break

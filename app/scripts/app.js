@@ -119,14 +119,30 @@
       return _results;
     };
     $.get('/scripts/weekly.json', function(response) {
-      $scope.timelineConfig.data[2].raw = response;
-      ++$scope.timelineConfig.data[2].epoch_raw;
+      var chunk, _i, _len, _ref;
+      _ref = $scope.timelineConfig.data;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        chunk = _ref[_i];
+        if (chunk.name === "Weekly") {
+          chunk.raw = response;
+          chunk.epoch_raw;
+          break;
+        }
+      }
       return $scope.$apply();
     });
     a = {};
     $.get('/scripts/hourly.json', function(response) {
-      $scope.timelineConfig.data[4].raw = response;
-      ++$scope.timelineConfig.data[4].epoch_raw;
+      var chunk, _i, _len, _ref;
+      _ref = $scope.timelineConfig.data;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        chunk = _ref[_i];
+        if (chunk.name === "Hourly") {
+          chunk.raw = response;
+          chunk.epoch_raw;
+          break;
+        }
+      }
       return $scope.$apply();
     });
     $scope.timelineConfig = {
