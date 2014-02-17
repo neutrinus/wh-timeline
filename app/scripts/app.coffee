@@ -76,8 +76,22 @@ window.TimelineController = ($scope) ->
         #console.log $scope.timelineConfig.data[step.idx].raw
         #{ start: 1377302400, end: 1377907200, value: 10.000000 },
 
+    $.get('/scripts/weekly.json', (response) ->
+        $scope.timelineConfig.data[2].raw = response
+        ++$scope.timelineConfig.data[2].epoch_raw
+        $scope.$apply()
+    )
+
+    a = {}
+
+    $.get('/scripts/hourly.json', (response) ->
+        $scope.timelineConfig.data[4].raw = response
+        ++$scope.timelineConfig.data[4].epoch_raw
+        $scope.$apply()
+    )
+
     $scope.timelineConfig = {
-        is_period: true,
+        is_period: false,
 
         selected_start: 1385856000,    # December 1, 2013, midnight
         selected_end: 1388849426,      # January 4, 2013, 15:30:26

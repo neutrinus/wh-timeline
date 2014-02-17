@@ -22,16 +22,6 @@
 
     margin-left: -@width/2;
 
-    &.point {
-        @width: 315px;
-        @height: 462px;
-
-        top: -@height - 5;
-        width: @width;
-        height: @height;
-        margin-left: -@width/2;
-    }
-
     .wh-timeline-config-close {
         @btn-dim: 20px;
 
@@ -84,13 +74,22 @@
         .wh-timeline-config(630px, 522px);
     }
 
+    .wh-timeline-config.point {
+        .wh-timeline-config(315px, 492px);
+    }
+
     @media screen and (max-width: 800px) ,
            screen and (max-height: 900px) {
+
+        .wh-timeline-config.point {
+            .wh-timeline-config(315px, 430px);
+        }
+
         .wh-timeline-config {
             .wh-timeline-config(440px, 460px);
             .ui-datepicker {
                 width: 14em;
-                height: 177px;
+                height: 188px !important;
 
                 td .ui-state-default {
                     padding: 0px;

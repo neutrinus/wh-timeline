@@ -32,12 +32,6 @@
   height: 522px;
   margin-left: -315px;
 }
-.wh-timeline .wh-timeline-config.point {
-  top: -467px;
-  width: 315px;
-  height: 462px;
-  margin-left: -157.5px;
-}
 .wh-timeline .wh-timeline-config .wh-timeline-config-close {
   width: 20px;
   height: 20px;
@@ -55,7 +49,63 @@
 .wh-timeline .wh-timeline-config .ui-datepicker {
   height: 237px;
 }
+.wh-timeline .wh-timeline-config.point {
+  position: absolute;
+  z-index: 100000;
+  top: -497px;
+  left: 50%;
+  display: block;
+  width: 315px;
+  max-width: 315px;
+  height: 492px;
+  margin-left: -157.5px;
+}
+.wh-timeline .wh-timeline-config.point .wh-timeline-config-close {
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+}
+.wh-timeline .wh-timeline-config.point .ui-datepicker-inline,
+.wh-timeline .wh-timeline-config.point timepicker-unix > table,
+.wh-timeline .wh-timeline-config.point datepicker-inputs > table {
+  margin: 0 auto;
+}
+.wh-timeline .wh-timeline-config.point datepicker-inputs > table {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.wh-timeline .wh-timeline-config.point .ui-datepicker {
+  height: 237px;
+}
 @media screen and (max-width: 800px), screen and (max-height: 900px) {
+  .wh-timeline .wh-timeline-config.point {
+    position: absolute;
+    z-index: 100000;
+    top: -425px;
+    left: 50%;
+    display: block;
+    width: 315px;
+    max-width: 315px;
+    height: 420px;
+    margin-left: -157.5px;
+  }
+  .wh-timeline .wh-timeline-config.point .wh-timeline-config-close {
+    width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+  }
+  .wh-timeline .wh-timeline-config.point .ui-datepicker-inline,
+  .wh-timeline .wh-timeline-config.point timepicker-unix > table,
+  .wh-timeline .wh-timeline-config.point datepicker-inputs > table {
+    margin: 0 auto;
+  }
+  .wh-timeline .wh-timeline-config.point datepicker-inputs > table {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+  .wh-timeline .wh-timeline-config.point .ui-datepicker {
+    height: 237px;
+  }
   .wh-timeline .wh-timeline-config {
     position: absolute;
     z-index: 100000;
@@ -66,12 +116,6 @@
     max-width: 440px;
     height: 460px;
     margin-left: -220px;
-  }
-  .wh-timeline .wh-timeline-config.point {
-    top: -467px;
-    width: 315px;
-    height: 462px;
-    margin-left: -157.5px;
   }
   .wh-timeline .wh-timeline-config .wh-timeline-config-close {
     width: 20px;
@@ -92,7 +136,7 @@
   }
   .wh-timeline .wh-timeline-config .ui-datepicker {
     width: 14em;
-    height: 177px;
+    height: 188px !important;
   }
   .wh-timeline .wh-timeline-config .ui-datepicker td .ui-state-default {
     padding: 0px;

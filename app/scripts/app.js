@@ -1,6 +1,6 @@
 (function() {
   window.TimelineController = function($scope) {
-    var week;
+    var a, week;
     week = 604800;
     $scope.steps = [
       {
@@ -118,8 +118,19 @@
       }
       return _results;
     };
+    $.get('/scripts/weekly.json', function(response) {
+      $scope.timelineConfig.data[2].raw = response;
+      ++$scope.timelineConfig.data[2].epoch_raw;
+      return $scope.$apply();
+    });
+    a = {};
+    $.get('/scripts/hourly.json', function(response) {
+      $scope.timelineConfig.data[4].raw = response;
+      ++$scope.timelineConfig.data[4].epoch_raw;
+      return $scope.$apply();
+    });
     $scope.timelineConfig = {
-      is_period: true,
+      is_period: false,
       selected_start: 1385856000,
       selected_end: 1388849426,
       visible_start: 1370044800,

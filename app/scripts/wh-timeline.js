@@ -20,7 +20,36 @@
     return hash;
   };
 
-  angular.module('wh.timeline', ['ui.date', 'ui.bootstrap.timepicker']).directive('whTimeline', [
+  angular.module('wh.timeline', ['ui.date', 'ui.bootstrap.timepicker']).service('wh.timeline.utils.configIsolator', function() {
+    return {
+      isolate: function(complete, properties) {
+        var p, viewValue, _i, _len;
+        viewValue = {};
+        for (_i = 0, _len = properties.length; _i < _len; _i++) {
+          p = properties[_i];
+          viewValue[p] = complete[p];
+        }
+        return viewValue;
+      },
+      merge: function(complete, isolated) {
+        var k, modelValue, v;
+        modelValue = {};
+        for (k in isolated) {
+          v = isolated[k];
+          if (k in complete) {
+            modelValue[k] = v;
+          }
+        }
+        for (k in complete) {
+          v = complete[k];
+          if (!(k in modelValue)) {
+            modelValue[k] = v;
+          }
+        }
+        return modelValue;
+      }
+    };
+  }).directive('whTimeline', [
     'wh.timeline.chart.Chart', 'wh.timeline.chart.ChartDataModel', 'wh.timeline.chart.ChartViewModel', 'wh.timeline.chart.D3ChartManager', 'wh.timeline.chart.view.Histogram', 'wh.timeline.utils.TimeInterval', '$timeout', '$interval', '$q', '$window', '$templateCache', (function(Chart, ChartDataModel, ChartViewModel, D3ChartManager, HistogramView, TimeInterval, $timeout, $interval, $q, $window, $templateCache) {
       var chartManagerDeferred;
       chartManagerDeferred = $q.defer();
@@ -52,12 +81,14 @@
               }
             }
           };
-          ngModel.$formatters.unshift(function(value) {
-            return $.extend(true, {}, value);
-          });
-          ngModel.$parsers.push(function(value) {
-            return $.extend(true, {}, value);
-          });
+          /*
+          ngModel.$formatters.unshift (value) ->
+              return $.extend(true, {}, value)
+          
+          ngModel.$parsers.push (value) ->
+              return $.extend(true, {}, value)
+          */
+
           scope.setTimePerspectives = function(newTimePerspectives) {
             var binWidth, chart, dataModel, elem, perspective, readyForRendering, _i, _len, _ref;
             if (angular.equals(newTimePerspectives, scope.visibleTimePerspectives)) {
@@ -193,7 +224,7 @@
       };
     })
   ]).directive('whTimelinePerspectivePicker', [
-    '$templateCache', function($templateCache) {
+    '$templateCache', 'wh.timeline.utils.configIsolator', function($templateCache, configIsolator) {
       return {
         restrict: 'E',
         replace: true,
@@ -206,16 +237,16 @@
         link: function(scope, element, attrs, controllers) {
           var ngModel, whTimeline;
           ngModel = controllers[0], whTimeline = controllers[1];
-          ngModel.$formatters.unshift(function(value) {
-            var activeEntries, chunk, previouslyActive;
-            value = $.extend({}, value);
-            value.data.sort(function(e1, e2) {
+          ngModel.$formatters.unshift(function(modelValue) {
+            var activeEntries, chunk, previouslyActive, viewValue;
+            viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
+            modelValue.data.sort(function(e1, e2) {
               return e1.bin_width < e2.bin_width;
             });
             previouslyActive = scope.active;
             activeEntries = ((function() {
               var _i, _len, _ref, _results;
-              _ref = value.data;
+              _ref = modelValue.data;
               _results = [];
               for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                 chunk = _ref[_i];
@@ -231,7 +262,7 @@
             }
             scope.available = (function() {
               var _i, _len, _ref, _results;
-              _ref = value.data;
+              _ref = modelValue.data;
               _results = [];
               for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                 chunk = _ref[_i];
@@ -241,7 +272,7 @@
             })();
             scope.binWidths = to_hash((function() {
               var _i, _len, _ref, _results;
-              _ref = value.data;
+              _ref = modelValue.data;
               _results = [];
               for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                 chunk = _ref[_i];
@@ -249,17 +280,17 @@
               }
               return _results;
             })());
-            return value;
+            return viewValue;
           });
-          ngModel.$parsers.push(function(value) {
-            var chunk, _i, _len, _ref, _ref1;
-            value = $.extend({}, value);
-            _ref = value.data;
+          ngModel.$parsers.push(function(viewValue) {
+            var chunk, modelValue, _i, _len, _ref, _ref1;
+            modelValue = configIsolator.merge(scope.ngModel, viewValue);
+            _ref = modelValue.data;
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
               chunk = _ref[_i];
               chunk.active = (_ref1 = chunk.name, __indexOf.call(scope.visible, _ref1) >= 0);
             }
-            return value;
+            return modelValue;
           });
           scope.active = null;
           scope.visible = null;
@@ -291,8 +322,8 @@
               return;
             }
             newActive = scope.available[newIdx];
-            visibleSeconds = ngModel.$modelValue.visible_end - ngModel.$modelValue.visible_start;
-            selectedSeconds = ngModel.$modelValue.selected_end - ngModel.$modelValue.selected_start;
+            visibleSeconds = ngModel.$viewValue.visible_end - ngModel.$viewValue.visible_start;
+            selectedSeconds = ngModel.$viewValue.selected_end - ngModel.$viewValue.selected_start;
             binWidthRatio = scope.binWidths[newActive] / scope.binWidths[scope.active];
             binWidthRatio = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio);
             factor = deltaIdx > 0 ? 1 : -1;
@@ -329,7 +360,7 @@
       };
     }
   ]).directive('whTimelineSelectionConfig', [
-    '$timeout', '$templateCache', (function($timeout, $templateCache) {
+    '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', (function($timeout, $templateCache, configIsolator) {
       return {
         restrict: 'E',
         replace: true,
@@ -371,7 +402,7 @@
           ngModel.$formatters.push(function(modelValue) {
             scope.start = modelValue.selected_start;
             scope.end = modelValue.selected_end;
-            return $.extend({}, modelValue);
+            return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
           });
           ngModel.$parsers.push(function(viewValue) {
             var binWidthPx, calcBinWidth, chunk, i, tooLittleVisible, visible, visibleArea, visibleSeconds, _i, _j, _len, _ref, _ref1, _ref2, _ref3, _ref4;
@@ -399,11 +430,11 @@
             };
             binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth);
             if (binWidthPx < 10) {
-              ngModel.$viewValue.data.sort(function(e1, e2) {
+              ngModel.$modelValue.data.sort(function(e1, e2) {
                 return e1.bin_width < e2.bin_width;
               });
-              for (i = _i = _ref2 = ngModel.$viewValue.data.length - 1; _i >= 0; i = _i += -1) {
-                chunk = ngModel.$viewValue.data[i];
+              for (i = _i = _ref2 = ngModel.$modelValue.data.length - 1; _i >= 0; i = _i += -1) {
+                chunk = ngModel.$modelValue.data[i];
                 binWidthPx = calcBinWidth(chunk.bin_width);
                 if (binWidthPx >= 10) {
                   break;
@@ -411,7 +442,7 @@
               }
               whTimeline.setActiveTimePerspective(chunk.name);
               visible = whTimeline.getVisibleTimePerspectives();
-              _ref3 = viewValue.data;
+              _ref3 = ngModel.$modelValue.data;
               for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
                 chunk = _ref3[_j];
                 chunk.active = (_ref4 = chunk.name, __indexOf.call(visible, _ref4) >= 0);
@@ -419,7 +450,7 @@
             }
             scope.start = viewValue.selected_start;
             scope.end = viewValue.selected_end;
-            return $.extend({}, viewValue);
+            return configIsolator.merge(scope.ngModel, viewValue);
           });
           scope.predefinedChoice = null;
           return scope.$watch('predefinedChoice', function(newChoice) {
@@ -446,7 +477,7 @@
       };
     })
   ]).directive('whTimelineSelections', [
-    '$timeout', '$interval', '$templateCache', 'wh.timeline.selection.plugin.ChartPanePlugin', 'wh.timeline.selection.plugin.StickySelectionPlugin', 'wh.timeline.selection.SelectionAreaManager', 'wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy', 'wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver', 'wh.timeline.selection.SelectionArea', (function($timeout, $interval, $templateCache, ChartPanePlugin, StickySelectionPlugin, SelectionAreaManager, SingleSelectionAreaManagementStrategy, SingleSelectionAreaNodeResolver, SelectionArea) {
+    '$timeout', '$interval', '$templateCache', 'wh.timeline.selection.plugin.ChartPanePlugin', 'wh.timeline.selection.plugin.StickySelectionPlugin', 'wh.timeline.selection.SelectionAreaManager', 'wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy', 'wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver', 'wh.timeline.selection.SelectionArea', 'wh.timeline.utils.configIsolator', (function($timeout, $interval, $templateCache, ChartPanePlugin, StickySelectionPlugin, SelectionAreaManager, SingleSelectionAreaManagementStrategy, SingleSelectionAreaNodeResolver, SelectionArea, configIsolator) {
       return {
         restrict: 'E',
         require: ['ngModel', '^whTimeline'],
@@ -476,17 +507,18 @@
             }
             return true;
           });
-          ngModel.$formatters.unshift(function(value) {
-            value = $.extend({}, value);
-            value.isNewSelection = scope.selectionManager.selections.length === 0;
-            if (value.isNewSelection) {
+          ngModel.$formatters.unshift(function(modelValue) {
+            var viewValue;
+            viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
+            viewValue.isNewSelection = scope.selectionManager.selections.length === 0;
+            if (viewValue.isNewSelection) {
               scope.selectionManager.selections[0] = new SelectionArea();
             }
             $timeout(function() {
               var selectionLeft, selectionRight, selectionWidth;
-              selectionLeft = whTimeline.getChartManager().dateToX(new Date(value.selected_start * 1000));
+              selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000));
               if (scope.ngModel.is_period) {
-                selectionRight = whTimeline.getChartManager().dateToX(new Date(value.selected_end * 1000 + 220));
+                selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000 + 220));
               } else {
                 selectionRight = selectionLeft;
               }
@@ -494,10 +526,10 @@
               scope.selectionManager.selections[0].left = selectionLeft + whTimeline.getChartManager().viewModel.viewportLeft;
               return scope.selectionManager.selections[0].width = selectionWidth;
             });
-            return value;
+            return viewValue;
           });
-          ngModel.$parsers.push(function(value) {
-            return $.extend({}, value);
+          ngModel.$parsers.push(function(viewValue) {
+            return configIsolator.merge(scope.ngModel, viewValue);
           });
           ngModel.$render = function() {
             return $timeout(function() {
@@ -836,7 +868,7 @@
             return;
           }
           scope.ngBlink = false;
-          return element.fadeIn().delay(3500).fadeOut();
+          return element.finish().fadeIn().delay(3500).fadeOut();
         });
       }
     };

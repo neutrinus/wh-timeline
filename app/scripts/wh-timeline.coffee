@@ -9,6 +9,27 @@ to_hash = (pairs) ->
 
 angular
     .module('wh.timeline', ['ui.date','ui.bootstrap.timepicker'])
+    .service('wh.timeline.utils.configIsolator', ->
+        return {
+            isolate: (complete, properties) ->
+                viewValue = {}
+                for p in properties
+                    viewValue[p] = complete[p]
+                return viewValue
+
+            merge:   (complete, isolated) ->
+                modelValue = {}
+                for k,v of isolated
+                    if k of complete
+                        modelValue[k] = v
+
+                for k,v of complete
+                    unless k of modelValue
+                        modelValue[k] = v
+
+                return modelValue
+        }
+    )
     .directive('whTimeline', [
         'wh.timeline.chart.Chart',
         'wh.timeline.chart.ChartDataModel',
@@ -55,11 +76,14 @@ angular
 
                     # -------------------------
 
+
+                    ###
                     ngModel.$formatters.unshift (value) ->
                         return $.extend(true, {}, value)
 
                     ngModel.$parsers.push (value) ->
                         return $.extend(true, {}, value)
+                    ###
 
                     # -------------------------
 
@@ -180,7 +204,7 @@ angular
     ])
 
     .directive('whTimelinePerspectivePicker',
-        ['$templateCache', ($templateCache) -> {
+        ['$templateCache', 'wh.timeline.utils.configIsolator', ($templateCache, configIsolator) -> {
             restrict: 'E'
             replace: true
             require: ['ngModel', '^whTimeline']
@@ -192,30 +216,31 @@ angular
             link: (scope, element, attrs, controllers) ->
                 [ngModel, whTimeline] = controllers
 
-                ngModel.$formatters.unshift (value) ->
-                    value = $.extend({}, value)
+                ngModel.$formatters.unshift (modelValue) ->
+                    viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
-                    value.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
+                    # @TODO: Remove
+                    modelValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
 
                     previouslyActive = scope.active
-                    activeEntries = (chunk.name for chunk in value.data when chunk.active).reverse()
+                    activeEntries = (chunk.name for chunk in modelValue.data when chunk.active).reverse()
 
                     scope.active = activeEntries[0]
                     if previouslyActive != scope.active
                         whTimeline.setVisibleTimePerspectives activeEntries
 
-                    scope.available = (chunk.name for chunk in value.data)
-                    scope.binWidths = to_hash([chunk.name, chunk.bin_width] for chunk in value.data)
+                    scope.available = (chunk.name for chunk in modelValue.data)
+                    scope.binWidths = to_hash([chunk.name, chunk.bin_width] for chunk in modelValue.data)
 
-                    return value
+                    return viewValue
 
-                ngModel.$parsers.push (value) ->
-                    value = $.extend({}, value)
+                ngModel.$parsers.push (viewValue) ->
+                    modelValue = configIsolator.merge(scope.ngModel, viewValue)
 
-                    for chunk in value.data
+                    for chunk in modelValue.data
                         chunk.active = chunk.name in scope.visible
 
-                    return value
+                    return modelValue
 
                 scope.active = null
                 scope.visible = null
@@ -236,8 +261,8 @@ angular
 
                     newActive = scope.available[newIdx]
 
-                    visibleSeconds = ngModel.$modelValue.visible_end - ngModel.$modelValue.visible_start
-                    selectedSeconds = ngModel.$modelValue.selected_end - ngModel.$modelValue.selected_start
+                    visibleSeconds = ngModel.$viewValue.visible_end - ngModel.$viewValue.visible_start
+                    selectedSeconds = ngModel.$viewValue.selected_end - ngModel.$viewValue.selected_start
                     binWidthRatio = scope.binWidths[newActive] / scope.binWidths[scope.active]
                     binWidthRatio = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio)
 
@@ -281,8 +306,8 @@ angular
 
 
     .directive('whTimelineSelectionConfig', [
-        '$timeout', '$templateCache',
-        (($timeout, $templateCache) ->
+        '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator',
+        (($timeout, $templateCache, configIsolator) ->
             return {
                 restrict: 'E'
                 replace: true
@@ -327,7 +352,7 @@ angular
                     ngModel.$formatters.push (modelValue) ->
                         scope.start = modelValue.selected_start
                         scope.end   = modelValue.selected_end
-                        return $.extend({}, modelValue)
+                        return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
                     ngModel.$parsers.push (viewValue) ->
                         unless viewValue.is_period
@@ -360,16 +385,16 @@ angular
                         binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth)
 
                         if binWidthPx < 10
-                            ngModel.$viewValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
-                            for i in [ngModel.$viewValue.data.length - 1..0] by -1
-                                chunk = ngModel.$viewValue.data[i]
+                            ngModel.$modelValue.data.sort (e1,e2) -> e1.bin_width < e2.bin_width
+                            for i in [ngModel.$modelValue.data.length - 1..0] by -1
+                                chunk = ngModel.$modelValue.data[i]
                                 binWidthPx = calcBinWidth(chunk.bin_width)
                                 if binWidthPx >= 10
                                     break
 
                             whTimeline.setActiveTimePerspective chunk.name
                             visible = whTimeline.getVisibleTimePerspectives()
-                            for chunk in viewValue.data
+                            for chunk in ngModel.$modelValue.data
                                 chunk.active = chunk.name in visible
 
                         # }}}
@@ -377,7 +402,7 @@ angular
                         scope.start = viewValue.selected_start
                         scope.end   = viewValue.selected_end
 
-                        return $.extend({}, viewValue)
+                        return configIsolator.merge(scope.ngModel, viewValue)
                     # }}}
 
                     # Predefined choices {{{
@@ -423,9 +448,10 @@ angular
         'wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy',
         'wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver',
         'wh.timeline.selection.SelectionArea',
+        'wh.timeline.utils.configIsolator',
         (($timeout, $interval, $templateCache, ChartPanePlugin, StickySelectionPlugin,
           SelectionAreaManager, SingleSelectionAreaManagementStrategy, SingleSelectionAreaNodeResolver,
-          SelectionArea) ->
+          SelectionArea, configIsolator) ->
             return {
                 restrict: 'E'
                 require:  ['ngModel', '^whTimeline']
@@ -458,18 +484,20 @@ angular
 
                     # -------------------------
 
-                    ngModel.$formatters.unshift (value) ->
-                        value = $.extend({}, value)
+                    ngModel.$formatters.unshift (modelValue) ->
+                        # modelValue = $.extend({}, modelValue)
 
-                        value.isNewSelection = scope.selectionManager.selections.length == 0
-                        if value.isNewSelection
+                        viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
+
+                        viewValue.isNewSelection = scope.selectionManager.selections.length == 0
+                        if viewValue.isNewSelection
                             scope.selectionManager.selections[0] = new SelectionArea()
 
                         $timeout ->
-                            selectionLeft = whTimeline.getChartManager().dateToX(new Date(value.selected_start*1000))
+                            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000))
 
                             if scope.ngModel.is_period
-                                selectionRight = whTimeline.getChartManager().dateToX(new Date((value.selected_end*1000+220))) # @TODO figure out why 220?
+                                selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000+220))) # @TODO figure out why 220?
                             else selectionRight = selectionLeft
 
                             selectionWidth = selectionRight-selectionLeft
@@ -477,11 +505,10 @@ angular
                             scope.selectionManager.selections[0].left =  selectionLeft  + whTimeline.getChartManager().viewModel.viewportLeft
                             scope.selectionManager.selections[0].width = selectionWidth
 
-                        return value
+                        return viewValue
 
-                    ngModel.$parsers.push (value) ->
-                        # value.selected_start = scope.chartManager.xToDate(value.selected_start).getTime()
-                        return $.extend({}, value)
+                    ngModel.$parsers.push (viewValue) ->
+                        return configIsolator.merge(scope.ngModel, viewValue)
 
                     ngModel.$render = ->
                         $timeout ->
@@ -844,7 +871,7 @@ angular
                 return if not newV or newV == oldV
                 scope.ngBlink = false
 
-                element.fadeIn().delay(3500).fadeOut()
+                element.finish().fadeIn().delay(3500).fadeOut()
             )
      )
 

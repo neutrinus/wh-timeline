@@ -216,12 +216,23 @@
     };
 
     D3ChartView.prototype.prepareData = function() {
-      return this.data = this.chart.dataModel.processedRawData.map(function(elem) {
-        return {
-          date: new Date(elem.start * 1000),
-          value: elem.value
-        };
-      });
+      var bin, renderSinceUnix, renderToUnix, _i, _len, _ref1, _results;
+      this.data = [];
+      renderSinceUnix = this.renderOptions.renderSince / 1000;
+      renderToUnix = this.renderOptions.renderTo / 1000;
+      _ref1 = this.chart.dataModel.processedRawData;
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        bin = _ref1[_i];
+        if (bin.start > renderToUnix || bin.end < renderSinceUnix) {
+          continue;
+        }
+        _results.push(this.data.push({
+          date: new Date(bin.start * 1000),
+          value: bin.value
+        }));
+      }
+      return _results;
     };
 
     D3ChartView.prototype.createXAxis = function() {

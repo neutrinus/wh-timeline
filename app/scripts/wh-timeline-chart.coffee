@@ -131,10 +131,15 @@ class D3ChartView extends ChartView
         return [ticks[i-1+shift], ticks[i+shift]]
 
     prepareData: ->
-        @data = @chart.dataModel.processedRawData.map (elem) -> {
-            date:   new Date(elem.start*1000)
-            value: elem.value
-        }
+        @data = []
+        renderSinceUnix = @renderOptions.renderSince / 1000
+        renderToUnix = @renderOptions.renderTo / 1000
+        for bin in @chart.dataModel.processedRawData
+            continue if bin.start > renderToUnix or bin.end < renderSinceUnix
+            @data.push {
+                date:   new Date(bin.start*1000)
+                value: bin.value
+            }
 
     createXAxis: ->
         @x = d3.time.scale.utc()
@@ -146,6 +151,7 @@ class D3ChartView extends ChartView
         @x.domain([
             @renderOptions.renderSince,
             @renderOptions.renderTo
+
             #@chart.dataModel.visibleTimeInterval.startDate,
             #@chart.dataModel.visibleTimeInterval.endDate
         ])
