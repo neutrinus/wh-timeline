@@ -301,7 +301,10 @@
 
                 svg {
                     position: absolute;
-                    right: 0;
+                    right: -1px; // Firefox renders path after the last px
+                }
+                @media only screen and (-webkit-min-device-pixel-ratio:0) {
+                    svg { right: 0px; } // Webkit renders path on last px
                 }
             }
 
@@ -313,6 +316,7 @@
             svg {
                 .axis {
                     font: 10px sans-serif;
+                    z-index: 101;
 
                     path,
                     line {
@@ -343,6 +347,11 @@
 
                         top: @data-area-height;
                         height: @x-axis-height;
+                        left: 1px;
+
+                        @media only screen and (-webkit-min-device-pixel-ratio:0) {
+                            & { left: 0px; }
+                        }
                     }
 
                     .charts-themselves {

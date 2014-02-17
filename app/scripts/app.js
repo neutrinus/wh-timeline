@@ -130,7 +130,7 @@
       return $scope.$apply();
     });
     $scope.timelineConfig = {
-      is_period: false,
+      is_period: true,
       selected_start: 1385856000,
       selected_end: 1388849426,
       visible_start: 1370044800,

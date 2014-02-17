@@ -516,7 +516,9 @@ angular
                         from = -viewModel.viewportLeft + newSelection.left
                         to = from + newSelection.width - 2
 
-                        unless ngModel.$viewValue.is_period
+                        if ngModel.$viewValue.is_period
+                            from -= 1
+                        else
                             from += 1
                             to += 2
 

@@ -258,6 +258,7 @@ class HistogramView extends D3HTMLChartView
             @dataset._calcWidth = tv(next) - tv(prev) - 1 # there always is next tick
             return @dataset._calcWidth+"px"
 
+
         bar = @svg.selectAll(".bar")
             .data(@data, (d) -> d.date)
 
@@ -466,6 +467,8 @@ class D3ChartManager extends ChartManager
             .duration(renderOptions.animDuration)
             .call(view.yAxis)
 
+        aAxisTick = (d) -> "translate(" + (view.tickValue(d)) + ", 0)"
+
         @xAxisElem
             #.transition()
             #.duration(renderOptions.animDuration)
@@ -473,9 +476,7 @@ class D3ChartManager extends ChartManager
 
             # Label
             .selectAll('.tick')
-            .attr("transform", (d) ->
-                "translate(" + view.tickValue(d) + ", 0)"
-            )
+            .attr("transform", aAxisTick)
             .each((d, i) ->
                 d3.select(this)
                 .selectAll('text')

@@ -191,7 +191,7 @@
         }
       }
       minX = this.area.width * -1 + 1;
-      maxX = this.getRightMargin();
+      maxX = this.getRightMargin() + 1;
       x = Math.min(maxX, x);
       x = Math.max(minX, x);
       return x;
@@ -549,12 +549,12 @@
       currentRight = event.activeSelection.right;
       if (event.activeSelection.subState === "moveLeftBound") {
         boundMethod = "moveLeftBound";
-        sameHandEdge = currentLeft;
+        sameHandEdge = currentLeft - 1;
         oppositeEdge = currentRight - 1;
       } else {
         boundMethod = "moveRightBound";
-        sameHandEdge = currentRight - 1;
-        oppositeEdge = currentLeft;
+        sameHandEdge = currentRight - 2;
+        oppositeEdge = currentLeft - 1;
       }
       projection = oppositeEdge + this.sumDelta;
       projectionSiblings = this.computeSurroundingTicksX(projection);

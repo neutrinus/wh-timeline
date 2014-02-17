@@ -81,12 +81,12 @@
   .wh-timeline .wh-timeline-config.point {
     position: absolute;
     z-index: 100000;
-    top: -425px;
+    top: -435px;
     left: 50%;
     display: block;
     width: 315px;
     max-width: 315px;
-    height: 420px;
+    height: 430px;
     margin-left: -157.5px;
   }
   .wh-timeline .wh-timeline-config.point .wh-timeline-config-close {
@@ -309,7 +309,12 @@
 }
 .wh-timeline .wh-timeline-widget .svg-area .y-axis-pane svg {
   position: absolute;
-  right: 0;
+  right: -1px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 0) {
+  .wh-timeline .wh-timeline-widget .svg-area .y-axis-pane svg {
+    right: 0px;
+  }
 }
 .wh-timeline .wh-timeline-widget .svg-area .x.axis {
   position: relative;
@@ -317,6 +322,7 @@
 }
 .wh-timeline .wh-timeline-widget .svg-area svg .axis {
   font: 10px sans-serif;
+  z-index: 101;
 }
 .wh-timeline .wh-timeline-widget .svg-area svg .axis path,
 .wh-timeline .wh-timeline-widget .svg-area svg .axis line {
@@ -347,6 +353,12 @@
   width: 100%;
   top: 130px;
   height: 110px;
+  left: 1px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 0) {
+  .wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .x-axis-pane {
+    left: 0px;
+  }
 }
 .wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves {
   position: absolute;

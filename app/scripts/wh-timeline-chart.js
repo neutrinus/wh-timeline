@@ -580,7 +580,7 @@
     };
 
     D3ChartManager.prototype.doRenderAxes = function(activeCharts, renderOptions) {
-      var chart, d3cm, mainChart, view;
+      var aAxisTick, chart, d3cm, mainChart, view;
       mainChart = this.getMainActiveChart();
       view = mainChart.view;
       chart = mainChart.chart;
@@ -592,9 +592,10 @@
         this.yAxisElem = this.yAxisSvg.append("g").attr("class", "y axis").attr("transform", "translate(25, 0)");
       }
       this.yAxisElem.transition().duration(renderOptions.animDuration).call(view.yAxis);
-      return this.xAxisElem.call(view.xAxis).selectAll('.tick').attr("transform", function(d) {
-        return "translate(" + view.tickValue(d) + ", 0)";
-      }).each(function(d, i) {
+      aAxisTick = function(d) {
+        return "translate(" + (view.tickValue(d)) + ", 0)";
+      };
+      return this.xAxisElem.call(view.xAxis).selectAll('.tick').attr("transform", aAxisTick).each(function(d, i) {
         return d3.select(this).selectAll('text').style("text-anchor", "start").attr("transform", "rotate(45)").attr("dy", "0.3em").attr("dx", "0.6em");
       });
     };

@@ -91,7 +91,7 @@ window.TimelineController = ($scope) ->
     )
 
     $scope.timelineConfig = {
-        is_period: false,
+        is_period: true,
 
         selected_start: 1385856000,    # December 1, 2013, midnight
         selected_end: 1388849426,      # January 4, 2013, 15:30:26

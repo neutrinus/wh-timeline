@@ -150,7 +150,7 @@ class SelectionAreaMover
                 return 0
 
         minX = @area.width * -1 + 1
-        maxX = @getRightMargin()
+        maxX = @getRightMargin() + 1
 
         x = Math.min(maxX, x)
         x = Math.max(minX, x)
@@ -425,12 +425,12 @@ class StickySelectionPlugin
 
         if event.activeSelection.subState == "moveLeftBound"
             boundMethod = "moveLeftBound"
-            sameHandEdge = currentLeft
-            oppositeEdge = currentRight-1
+            sameHandEdge = currentLeft  - 1
+            oppositeEdge = currentRight - 1
         else
             boundMethod = "moveRightBound"
-            sameHandEdge = currentRight-1
-            oppositeEdge = currentLeft
+            sameHandEdge = currentRight - 2
+            oppositeEdge = currentLeft  - 1
 
         # mover[boundMethod](-currentDelta)
 
@@ -521,7 +521,7 @@ class ChartPanePlugin
 
                     beforeStep = (absStepDeltaPx) ->
                         activeSelection.width = initialSelectionWidth + absStepDeltaPx
-                        activeSelection.left  = initialSelectionLeft - absStepDeltaPx
+                        activeSelection.left  = initialSelectionLeft  - absStepDeltaPx
 
                 unless @selectionAreaManager.options.isPeriod
                     beforeStep = ->
