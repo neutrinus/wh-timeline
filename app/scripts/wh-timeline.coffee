@@ -37,13 +37,14 @@ angular
         'wh.timeline.chart.D3ChartManager',
         'wh.timeline.chart.view.Histogram',
         'wh.timeline.utils.TimeInterval',
+        'wh.timeline.utils.configIsolator',
         '$timeout',
         '$interval',
         '$q',
         '$window',
         '$templateCache',
-        ((Chart, ChartDataModel, ChartViewModel, D3ChartManager,
-          HistogramView, TimeInterval, $timeout, $interval, $q, $window, $templateCache) ->
+        ((Chart, ChartDataModel, ChartViewModel, D3ChartManager, HistogramView, TimeInterval,
+          configIsolator, $timeout, $interval, $q, $window, $templateCache) ->
             chartManagerDeferred = $q.defer()
             return {
                 restrict: 'E'
@@ -133,6 +134,14 @@ angular
                         whTimeline.render()
                     ))
 
+                    scope.$watch((-> configIsolator.isolate(scope.ngModel, ['selected_start','selected_end'])), ((newV, oldV) ->
+                        return if newV == oldV
+                        if scope.selectionModifiedByUser
+                            scope.selectionModifiedByUser = false
+                            return
+                        scope.ngModel = configIsolator.merge(scope.ngModel, newV)
+                    ), true)
+
                     # State data (colors in background):
                     scope.states = []
                     scope.updateStateData = ->
@@ -186,9 +195,11 @@ angular
                         } for item in $scope.ngModel.data)
                         binPerspectiveData.sort (e1,e2) -> e1.bin_width < e2.bin_width
                         return binPerspectiveData
-
-                    @render = ->
-                        @getChartManager().renderCurrentState()
+                    @setSelectionModifiedByUser = -> scope.selectionModifiedByUser = true
+                    @isSelectionModifiedByUser = -> scope.selectionModifiedByUser
+                    @updateStateData = -> $scope.updateStateData()
+                    @render = (force=false) ->
+                        @getChartManager().renderCurrentState(force)
                         $scope.updateStateData()
                     return @
             }
@@ -394,6 +405,8 @@ angular
                         scope.start = viewValue.selected_start
                         scope.end   = viewValue.selected_end
 
+                        whTimeline.setSelectionModifiedByUser()
+
                         return configIsolator.merge(scope.ngModel, viewValue)
                     # }}}
 
@@ -402,6 +415,8 @@ angular
 
                     scope.$watch('predefinedChoice', (newChoice) ->
                         return unless newChoice
+
+                        whTimeline.setSelectionModifiedByUser()
 
                         ngModel.$viewValue.selected_start = newChoice.start
                         ngModel.$viewValue.selected_end   = newChoice.end
@@ -476,26 +491,26 @@ angular
 
                     # -------------------------
 
-                    ngModel.$formatters.unshift (modelValue) ->
-                        # modelValue = $.extend({}, modelValue)
+                    recalculateSelectionView = (viewValue) ->
+                        selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000))
 
+                        if scope.ngModel.is_period
+                            selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000+220))) # @TODO figure out why 220?
+                        else selectionRight = selectionLeft
+
+                        selectionWidth = selectionRight-selectionLeft
+
+                        scope.selectionManager.selections[0].left =  selectionLeft  + whTimeline.getChartManager().viewModel.viewportLeft
+                        scope.selectionManager.selections[0].width = selectionWidth
+
+                    ngModel.$formatters.unshift (modelValue) ->
                         viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
                         viewValue.isNewSelection = scope.selectionManager.selections.length == 0
                         if viewValue.isNewSelection
                             scope.selectionManager.selections[0] = new SelectionArea()
 
-                        $timeout ->
-                            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000))
-
-                            if scope.ngModel.is_period
-                                selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000+220))) # @TODO figure out why 220?
-                            else selectionRight = selectionLeft
-
-                            selectionWidth = selectionRight-selectionLeft
-
-                            scope.selectionManager.selections[0].left =  selectionLeft  + whTimeline.getChartManager().viewModel.viewportLeft
-                            scope.selectionManager.selections[0].width = selectionWidth
+                        $timeout -> recalculateSelectionView(viewValue)
 
                         return viewValue
 
@@ -503,6 +518,9 @@ angular
                         return configIsolator.merge(scope.ngModel, viewValue)
 
                     ngModel.$render = ->
+                        #unless whTimeline.isSelectionModifiedByUser()
+                        #    scope.selectionManager.stopInteraction()
+
                         $timeout ->
                             method = if ngModel.$viewValue.isNewSelection then 'css' else 'animate'
                             selectionElement().stop()[method]({
@@ -543,6 +561,8 @@ angular
                         ngModel.$viewValue.visible_start = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.viewportLeft)))
                         ngModel.$viewValue.visible_end = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.viewportLeft + viewModel.dataArea.width)))
 
+                        whTimeline.setSelectionModifiedByUser()
+
                         ngModel.$setViewValue(ngModel.$viewValue)
                         scope.$apply()
 
@@ -550,6 +570,9 @@ angular
 
                     chartManager = null
                     onUserInteraction = (options) ->
+                        if options.type == "onCloseToBoundary"
+                            whTimeline.render(true)
+
                         activeSelection = scope.selectionManager.selections[0]
 
                         selectionElement().stop().css({
@@ -590,14 +613,11 @@ angular
                         }))
                     )
 
-
                     # -- Tracking feature {{{
                     prevTime = getUnix()
 
-                    # Race condition with whTimeline.onUserInteraction() - if this runs before scope is applied,
-                    # then everything is lost :(
                     # $interval calls $apply() each time regardless of the fourth param!!
-                    false and setInterval((->
+                    setInterval((->
                         newTime = getUnix()
 
                         activeSelection = scope.selectionManager.selections[0]

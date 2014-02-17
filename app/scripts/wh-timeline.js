@@ -50,7 +50,7 @@
       }
     };
   }).directive('whTimeline', [
-    'wh.timeline.chart.Chart', 'wh.timeline.chart.ChartDataModel', 'wh.timeline.chart.ChartViewModel', 'wh.timeline.chart.D3ChartManager', 'wh.timeline.chart.view.Histogram', 'wh.timeline.utils.TimeInterval', '$timeout', '$interval', '$q', '$window', '$templateCache', (function(Chart, ChartDataModel, ChartViewModel, D3ChartManager, HistogramView, TimeInterval, $timeout, $interval, $q, $window, $templateCache) {
+    'wh.timeline.chart.Chart', 'wh.timeline.chart.ChartDataModel', 'wh.timeline.chart.ChartViewModel', 'wh.timeline.chart.D3ChartManager', 'wh.timeline.chart.view.Histogram', 'wh.timeline.utils.TimeInterval', 'wh.timeline.utils.configIsolator', '$timeout', '$interval', '$q', '$window', '$templateCache', (function(Chart, ChartDataModel, ChartViewModel, D3ChartManager, HistogramView, TimeInterval, configIsolator, $timeout, $interval, $q, $window, $templateCache) {
       var chartManagerDeferred;
       chartManagerDeferred = $q.defer();
       return {
@@ -151,6 +151,18 @@
             chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval());
             return whTimeline.render();
           }));
+          scope.$watch((function() {
+            return configIsolator.isolate(scope.ngModel, ['selected_start', 'selected_end']);
+          }), (function(newV, oldV) {
+            if (newV === oldV) {
+              return;
+            }
+            if (scope.selectionModifiedByUser) {
+              scope.selectionModifiedByUser = false;
+              return;
+            }
+            return scope.ngModel = configIsolator.merge(scope.ngModel, newV);
+          }), true);
           scope.states = [];
           scope.updateStateData = function() {
             var left, main, right, state, _i, _len, _ref;
@@ -232,8 +244,20 @@
             });
             return binPerspectiveData;
           };
-          this.render = function() {
-            this.getChartManager().renderCurrentState();
+          this.setSelectionModifiedByUser = function() {
+            return scope.selectionModifiedByUser = true;
+          };
+          this.isSelectionModifiedByUser = function() {
+            return scope.selectionModifiedByUser;
+          };
+          this.updateStateData = function() {
+            return $scope.updateStateData();
+          };
+          this.render = function(force) {
+            if (force == null) {
+              force = false;
+            }
+            this.getChartManager().renderCurrentState(force);
             return $scope.updateStateData();
           };
           return this;
@@ -460,6 +484,7 @@
             }
             scope.start = viewValue.selected_start;
             scope.end = viewValue.selected_end;
+            whTimeline.setSelectionModifiedByUser();
             return configIsolator.merge(scope.ngModel, viewValue);
           });
           scope.predefinedChoice = null;
@@ -468,6 +493,7 @@
             if (!newChoice) {
               return;
             }
+            whTimeline.setSelectionModifiedByUser();
             ngModel.$viewValue.selected_start = newChoice.start;
             ngModel.$viewValue.selected_end = newChoice.end;
             ngModel.$viewValue.is_start_tracked = newChoice.start_tracked;
@@ -498,7 +524,7 @@
         },
         template: $templateCache.get('templates/wh-timeline-selections.html'),
         link: function(scope, element, attrs, controllers) {
-          var chartManager, ngModel, oldSelection, onUserInteraction, prevTime, selectionElement, selectionPane, throttledUpdateModel, updateModel, whTimeline,
+          var chartManager, ngModel, oldSelection, onUserInteraction, prevTime, recalculateSelectionView, selectionElement, selectionPane, throttledUpdateModel, updateModel, whTimeline,
             _this = this;
           ngModel = controllers[0], whTimeline = controllers[1];
           selectionPane = element;
@@ -517,6 +543,18 @@
             }
             return true;
           });
+          recalculateSelectionView = function(viewValue) {
+            var selectionLeft, selectionRight, selectionWidth;
+            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000));
+            if (scope.ngModel.is_period) {
+              selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000 + 220));
+            } else {
+              selectionRight = selectionLeft;
+            }
+            selectionWidth = selectionRight - selectionLeft;
+            scope.selectionManager.selections[0].left = selectionLeft + whTimeline.getChartManager().viewModel.viewportLeft;
+            return scope.selectionManager.selections[0].width = selectionWidth;
+          };
           ngModel.$formatters.unshift(function(modelValue) {
             var viewValue;
             viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
@@ -525,16 +563,7 @@
               scope.selectionManager.selections[0] = new SelectionArea();
             }
             $timeout(function() {
-              var selectionLeft, selectionRight, selectionWidth;
-              selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000));
-              if (scope.ngModel.is_period) {
-                selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000 + 220));
-              } else {
-                selectionRight = selectionLeft;
-              }
-              selectionWidth = selectionRight - selectionLeft;
-              scope.selectionManager.selections[0].left = selectionLeft + whTimeline.getChartManager().viewModel.viewportLeft;
-              return scope.selectionManager.selections[0].width = selectionWidth;
+              return recalculateSelectionView(viewValue);
             });
             return viewValue;
           });
@@ -572,6 +601,7 @@
             ngModel.$viewValue.selected_end = getUnix(invertedEndDate);
             ngModel.$viewValue.visible_start = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.viewportLeft)));
             ngModel.$viewValue.visible_end = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.viewportLeft + viewModel.dataArea.width)));
+            whTimeline.setSelectionModifiedByUser();
             ngModel.$setViewValue(ngModel.$viewValue);
             return scope.$apply();
           };
@@ -579,6 +609,9 @@
           chartManager = null;
           onUserInteraction = function(options) {
             var activeSelection;
+            if (options.type === "onCloseToBoundary") {
+              whTimeline.render(true);
+            }
             activeSelection = scope.selectionManager.selections[0];
             selectionElement().stop().css({
               width: activeSelection.width,
@@ -612,7 +645,7 @@
             }));
           });
           prevTime = getUnix();
-          return false && setInterval((function() {
+          return setInterval((function() {
             var activeSelection, deltaMs, isPoint, newTime;
             newTime = getUnix();
             activeSelection = scope.selectionManager.selections[0];

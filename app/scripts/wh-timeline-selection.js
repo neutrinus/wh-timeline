@@ -347,6 +347,7 @@
           right: false
         }
       };
+      this.plugins = [];
       this.pane = null;
       this.state = "none";
       this.activeSelection = null;
@@ -414,6 +415,18 @@
       this.params.initialArea.width = width;
       pluginModel = this.pane.selectableArea().model;
       return pluginModel.x = 0;
+    };
+
+    SelectionAreaManager.prototype.stopInteraction = function() {
+      var plugin, _i, _len, _ref1, _results;
+      this.activeSelection = null;
+      _ref1 = this.plugins;
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        plugin = _ref1[_i];
+        _results.push(plugin.stopInteraction());
+      }
+      return _results;
     };
 
     setup = function() {
@@ -512,6 +525,7 @@
       if (options == null) {
         options = {};
       }
+      this.interactionStopped = false;
       this.options = $.extend(true, {
         viewport: $('.chart-viewport'),
         onUpdate: $.noop()
@@ -520,8 +534,13 @@
 
     StickySelectionPlugin.prototype.init = function(selectionAreaManager) {
       this.selectionAreaManager = selectionAreaManager;
+      this.selectionAreaManager.plugins.push(this);
       this.selectionAreaManager.listeners.afterSelectionStart.push(this.afterSelectionStart.bind(this));
       return this.selectionAreaManager.listeners.afterSelectionChange.push(this.afterSelectionChange.bind(this));
+    };
+
+    StickySelectionPlugin.prototype.stopInteraction = function() {
+      return this.interactionStopped = true;
     };
 
     StickySelectionPlugin.prototype.afterSelectionStart = function(event) {
@@ -533,6 +552,10 @@
 
     StickySelectionPlugin.prototype.afterSelectionChange = function(event) {
       var alignedProjection, boundMethod, currentDelta, currentLeft, currentRight, dataAreaWidth, deltaX, mover, oppositeEdge, projection, projectionSiblings, sameHandEdge;
+      if (this.interactionStopped) {
+        this.interactionStopped = false;
+        return;
+      }
       if (!event.activeSelection.isClicked) {
         return;
       }
@@ -607,6 +630,7 @@
 
     ChartPanePlugin.prototype.init = function(selectionAreaManager) {
       this.selectionAreaManager = selectionAreaManager;
+      this.selectionAreaManager.plugins.push(this);
       this.selectionAreaManager.listeners.afterSelectionStart.push(this.afterSelectionStart.bind(this));
       this.selectionAreaManager.listeners.afterSelectionChange.push(this.afterSelectionChange.bind(this));
       return this.selectionAreaManager.listeners.afterSelectionFinish.push(this.afterSelectionFinish.bind(this));
@@ -663,6 +687,9 @@
         }, {
           progress: function(animation, progress, remainingMs) {
             var newViewportLeft, stepDeltaPx;
+            if (_this.interactionStopped) {
+              return;
+            }
             stepDeltaPx = Math.round(progress * deltaPx + 0.00001);
             beforeStep(Math.abs(stepDeltaPx));
             newViewportLeft = viewportLeft - stepDeltaPx;
@@ -716,6 +743,7 @@
       width = this.options.viewport.width();
       this.options.viewport.stop();
       return this.options.onUpdate({
+        type: "onCloseToBoundary",
         viewportBounds: {
           left: -left,
           right: -left + dataAreaWidth

@@ -76,6 +76,19 @@ window.TimelineController = ($scope) ->
         #console.log $scope.timelineConfig.data[step.idx].raw
         #{ start: 1377302400, end: 1377907200, value: 10.000000 },
 
+    ###
+    $(document).on('keydown', (e) ->
+        # console.log e.keyCode
+        if e.keyCode == 39
+            $scope.$apply ->
+                $scope.addData()
+                $scope.timelineConfig.selected_start += 10000
+                $scope.timelineConfig.selected_end   += 10000
+                $scope.timelineConfig.visible_start += 1000000
+                $scope.timelineConfig.visible_end   += 1000000
+    )
+    ###
+
     $.get('/scripts/weekly.json', (response) ->
         for chunk in $scope.timelineConfig.data
             if chunk.name == "Weekly"

@@ -118,6 +118,19 @@
       }
       return _results;
     };
+    /*
+    $(document).on('keydown', (e) ->
+        # console.log e.keyCode
+        if e.keyCode == 39
+            $scope.$apply ->
+                $scope.addData()
+                $scope.timelineConfig.selected_start += 10000
+                $scope.timelineConfig.selected_end   += 10000
+                $scope.timelineConfig.visible_start += 1000000
+                $scope.timelineConfig.visible_end   += 1000000
+    )
+    */
+
     $.get('/scripts/weekly.json', function(response) {
       var chunk, _i, _len, _ref;
       _ref = $scope.timelineConfig.data;

@@ -33,7 +33,6 @@ class SelectionAreaMover
         @setup(area, paneWidth)
 
         overflowBefore = @area.overflow
-        # console.log 'bounds left '+ e.selection.bounds.left
         switch @area.state
             when "move"
                 @handleOverflowMove e.selection.bounds, e.selection.atomicDelta.x
@@ -245,6 +244,7 @@ class SelectionAreaManager
                 right: false     # is resize to the right?
             }
         }
+        @plugins = []
         @pane = null
         @state = "none"
         @activeSelection = null
@@ -298,6 +298,11 @@ class SelectionAreaManager
         pluginModel = @pane.selectableArea().model
         pluginModel.x = 0
 
+    stopInteraction: ->
+        @activeSelection = null
+        for plugin in @plugins
+            plugin.stopInteraction()
+
     setup = ->
         @pane.selectableArea()
 
@@ -349,7 +354,6 @@ class SelectionAreaManager
         )
 
         @pane.on("areaSelectionFinish", (e) =>
-
             # if it's just a click in a period mode
             if @options.isPeriod and @activeSelection and not changed and @activeSelection.width == 1
                 e.keepActive = true
@@ -391,14 +395,19 @@ class SelectionAreaManager
 class StickySelectionPlugin
 
     constructor: (@chartManager, options={}) ->
+        @interactionStopped = false
         @options = $.extend(true, {
             viewport:       $('.chart-viewport'),
             onUpdate:       $.noop()
         }, options)
 
     init: (@selectionAreaManager) ->
+        @selectionAreaManager.plugins.push @
         @selectionAreaManager.listeners.afterSelectionStart.push   @afterSelectionStart.bind(@)
         @selectionAreaManager.listeners.afterSelectionChange.push  @afterSelectionChange.bind(@)
+
+    stopInteraction: ->
+        @interactionStopped = true
 
     afterSelectionStart: (event) ->
         @sumDelta = 0
@@ -406,6 +415,9 @@ class StickySelectionPlugin
             event.activeSelection.subState = "moveRightBound"
 
     afterSelectionChange: (event) ->
+        if @interactionStopped
+            @interactionStopped = false
+            return
         return unless event.activeSelection.isClicked
         return unless @selectionAreaManager.options.isPeriod
 
@@ -472,6 +484,7 @@ class ChartPanePlugin
         }, options)
 
     init: (@selectionAreaManager) ->
+        @selectionAreaManager.plugins.push @
         @selectionAreaManager.listeners.afterSelectionStart.push  @afterSelectionStart.bind(@)
         @selectionAreaManager.listeners.afterSelectionChange.push @afterSelectionChange.bind(@)
         @selectionAreaManager.listeners.afterSelectionFinish.push @afterSelectionFinish.bind(@)
@@ -528,6 +541,7 @@ class ChartPanePlugin
 
             viewport.animate({textIndent: 0}, {
                 progress: (animation, progress, remainingMs) =>
+                    return if @interactionStopped
                     stepDeltaPx = Math.round(progress * deltaPx + 0.00001)
                     beforeStep(Math.abs(stepDeltaPx))
                     newViewportLeft = viewportLeft - stepDeltaPx
@@ -573,6 +587,7 @@ class ChartPanePlugin
         @options.viewport.stop()
 
         @options.onUpdate({
+            type: "onCloseToBoundary"
             viewportBounds:  {
                 left:  -left
                 right: -left + dataAreaWidth
