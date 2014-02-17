@@ -429,7 +429,8 @@ class D3ChartManager extends ChartManager
         # @TODO: Refactor out
         #if not @viewModel.viewportLeft
         @viewModel.viewportLeft = -renderOptions.renderBefore
-        @viewModel.viewport.css('left', @viewModel.viewportLeft) # @TXC comment this line
+        @viewModel.viewport.css('left',   @viewModel.viewportLeft) # @TXC comment this line
+        @viewModel.viewport.css('width', -@viewModel.viewportLeft*2.5) # @TXC comment this line
 
         @doRenderAxes(activeCharts, renderOptions)
 

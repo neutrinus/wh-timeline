@@ -290,7 +290,7 @@
         }
 
         .svg-area {
-            z-index: 70;
+            z-index:  50;
             overflow: hidden;
 
             .y-axis-pane {
@@ -340,7 +340,7 @@
 
                 .chart-viewport {
                     .overlay-y;
-                    height: @chart-viewport-height;
+                    height: @data-area-height;
 
                     .x-axis-pane {
                         .overlay-x;
@@ -356,6 +356,8 @@
 
                     .charts-themselves {
                         .overlay-x;
+
+                        z-index: 70;
 
                         height: @data-area-height;
 

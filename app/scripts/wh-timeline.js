@@ -106,7 +106,7 @@
             }
             chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval());
             chartManager.setActiveCharts(scope.visibleTimePerspectives);
-            return chartManager.renderCurrentState();
+            return whTimeline.render();
           };
           scope.chartManager = chartManager = new D3ChartManager(new ChartViewModel(element.find('.wh-timeline-widget .svg-area')));
           chartManager.beforeRender = function() {
@@ -148,28 +148,30 @@
               dataModel.updateRaw(findDataForTimePerspective(dataModel.perspective, 'raw'));
               dataModel.updateState(findDataForTimePerspective(dataModel.perspective, 'state'));
             }
-            return chartManager.renderCurrentState();
+            return whTimeline.render();
           }), true);
           scope.$watchCollection('[ngModel.visible_start, ngModel.visible_end]', (function() {
             chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval());
-            return chartManager.renderCurrentState();
+            return whTimeline.render();
           }));
-          /*
-          scope.states = []
-          scope.$watch('timePerspective.active', ((newV) ->
-              main = chartManager.getMainActiveChart()
-              scope.states = []
-              for state in main.chart.dataModel.processedStateData
-                  left = chartManager.dateToX(state.startDate)
-                  right = chartManager.dateToX(state.endDate)
-                  scope.states.push {
-                      left: left
-                      width: right - left
-                      state: state.state
-                  }
-          ))
-          */
-
+          scope.states = [];
+          scope.updateStateData = function() {
+            var left, main, right, state, _i, _len, _ref;
+            main = chartManager.getMainActiveChart();
+            scope.states = [];
+            _ref = main.chart.dataModel.processedStateData;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              state = _ref[_i];
+              left = chartManager.dateToX(new Date(state.start * 1000));
+              right = chartManager.dateToX(new Date(state.end * 1000));
+              scope.states.push({
+                left: left,
+                width: right - left,
+                state: state.state
+              });
+            }
+            return scope.states;
+          };
           $(document).on('click', function(e) {
             var $target;
             $target = $(e.target);
@@ -210,6 +212,10 @@
           };
           this.getData = function() {
             return $scope.ngModel.data;
+          };
+          this.render = function() {
+            this.getChartManager().renderCurrentState();
+            return $scope.updateStateData();
           };
           return this;
         }
@@ -561,8 +567,6 @@
           chartManager = null;
           onUserInteraction = function(options) {
             var activeSelection;
-            ++scope.viewState;
-            chartManager || (chartManager = whTimeline.getChartManager());
             activeSelection = scope.selectionManager.selections[0];
             selectionElement().stop().css({
               width: activeSelection.width,
@@ -577,16 +581,17 @@
               return throttledUpdateModel();
             }
           };
-          scope.selectionManager = new SelectionAreaManager(selectionPane, {
-            afterSelectionChange: onUserInteraction,
-            strategy: new SingleSelectionAreaManagementStrategy({
-              nodeResolver: new SingleSelectionAreaNodeResolver({
-                selectionElementSelector: '.selection-area'
-              })
-            }),
-            isPeriod: scope.ngModel.is_period
-          });
-          whTimeline.chartManagerPromise().then(function(chartManager) {
+          whTimeline.chartManagerPromise().then(function(createdChartManager) {
+            chartManager = createdChartManager;
+            scope.selectionManager = new SelectionAreaManager(selectionPane, {
+              afterSelectionChange: onUserInteraction,
+              strategy: new SingleSelectionAreaManagementStrategy({
+                nodeResolver: new SingleSelectionAreaNodeResolver({
+                  selectionElementSelector: '.selection-area'
+                })
+              }),
+              isPeriod: scope.ngModel.is_period
+            });
             scope.selectionManager.addPlugin(new StickySelectionPlugin(chartManager, {
               onUpdate: onUserInteraction
             }));
@@ -595,7 +600,7 @@
             }));
           });
           prevTime = getUnix();
-          return setInterval((function() {
+          return false && setInterval((function() {
             var activeSelection, deltaMs, isPoint, newTime;
             newTime = getUnix();
             activeSelection = scope.selectionManager.selections[0];

@@ -715,14 +715,13 @@
       left = this.options.viewport.position().left;
       width = this.options.viewport.width();
       this.options.viewport.stop();
-      this.options.onUpdate({
+      return this.options.onUpdate({
         viewportBounds: {
           left: -left,
           right: -left + dataAreaWidth
         },
         forceUpdate: true
       });
-      return this.chartManager.renderCurrentState(true);
     };
 
     return ChartPanePlugin;

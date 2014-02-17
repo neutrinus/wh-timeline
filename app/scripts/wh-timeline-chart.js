@@ -576,6 +576,7 @@
       }
       this.viewModel.viewportLeft = -renderOptions.renderBefore;
       this.viewModel.viewport.css('left', this.viewModel.viewportLeft);
+      this.viewModel.viewport.css('width', -this.viewModel.viewportLeft * 2.5);
       return this.doRenderAxes(activeCharts, renderOptions);
     };
 

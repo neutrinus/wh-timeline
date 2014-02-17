@@ -98,7 +98,7 @@ angular
                         chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval())
                         chartManager.setActiveCharts(scope.visibleTimePerspectives)
 
-                        chartManager.renderCurrentState()
+                        whTimeline.render()
 
                     # --------------------------
                     # --------- CHART ----------
@@ -128,32 +128,28 @@ angular
                             dataModel.updateRaw(findDataForTimePerspective(dataModel.perspective, 'raw'))
                             dataModel.updateState(findDataForTimePerspective(dataModel.perspective, 'state'))
 
-                        chartManager.renderCurrentState()
+                        whTimeline.render()
                     ), true)
 
                     scope.$watchCollection('[ngModel.visible_start, ngModel.visible_end]', ( ->
                         chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval())
-                        chartManager.renderCurrentState()
+                        whTimeline.render()
                     ))
 
-                    # Charts {{{
-
                     # State data (colors in background):
-                    ###
                     scope.states = []
-                    scope.$watch('timePerspective.active', ((newV) ->
+                    scope.updateStateData = ->
                         main = chartManager.getMainActiveChart()
                         scope.states = []
                         for state in main.chart.dataModel.processedStateData
-                            left = chartManager.dateToX(state.startDate)
-                            right = chartManager.dateToX(state.endDate)
+                            left = chartManager.dateToX(new Date(state.start*1000))
+                            right = chartManager.dateToX(new Date(state.end*1000))
                             scope.states.push {
-                                left: left
+                                left:  left
                                 width: right - left
                                 state: state.state
                             }
-                    ))
-                    ###
+                        return scope.states
 
                     $(document).on('click', (e) =>
                         $target = $(e.target)
@@ -163,7 +159,6 @@ angular
                             scope.$digest()
                         return true
                     )
-                    # }}} Charts
                     return 1
 
                 controller: ($scope, $element, $attrs) ->
@@ -185,6 +180,9 @@ angular
                     @setVisibleTimePerspectives = (visible) -> $scope.setTimePerspectives visible
                     @getVisibleTimePerspectives = -> $scope.visibleTimePerspectives
                     @getData = -> $scope.ngModel.data
+                    @render = ->
+                        @getChartManager().renderCurrentState()
+                        $scope.updateStateData()
                     return @
             }
         )
@@ -545,10 +543,6 @@ angular
 
                     chartManager = null
                     onUserInteraction = (options) ->
-                        ++scope.viewState;
-
-                        chartManager or= whTimeline.getChartManager()
-
                         activeSelection = scope.selectionManager.selections[0]
 
                         selectionElement().stop().css({
@@ -565,19 +559,21 @@ angular
                         else
                             throttledUpdateModel()
 
-                    scope.selectionManager = new SelectionAreaManager(selectionPane, {
-                        #afterSelectionStart:  onUserInteraction
-                        #afterSelectionFinish: onUserInteraction
-                        afterSelectionChange: onUserInteraction
-                        strategy: new SingleSelectionAreaManagementStrategy({
-                            nodeResolver: new SingleSelectionAreaNodeResolver({
-                                selectionElementSelector: '.selection-area'
-                            })
-                        })
-                        isPeriod: scope.ngModel.is_period
-                    })
+                    whTimeline.chartManagerPromise().then((createdChartManager) ->
+                        chartManager = createdChartManager
 
-                    whTimeline.chartManagerPromise().then((chartManager) ->
+                        scope.selectionManager = new SelectionAreaManager(selectionPane, {
+                            #afterSelectionStart:  onUserInteraction
+                            #afterSelectionFinish: onUserInteraction
+                            afterSelectionChange: onUserInteraction
+                            strategy: new SingleSelectionAreaManagementStrategy({
+                                nodeResolver: new SingleSelectionAreaNodeResolver({
+                                    selectionElementSelector: '.selection-area'
+                                })
+                            })
+                            isPeriod: scope.ngModel.is_period
+                        })
+
                         scope.selectionManager.addPlugin(new StickySelectionPlugin(chartManager, {
                             onUpdate: onUserInteraction
                         }))
@@ -594,7 +590,7 @@ angular
                     # Race condition with whTimeline.onUserInteraction() - if this runs before scope is applied,
                     # then everything is lost :(
                     # $interval calls $apply() each time regardless of the fourth param!!
-                    setInterval((->
+                    false and setInterval((->
                         newTime = getUnix()
 
                         activeSelection = scope.selectionManager.selections[0]

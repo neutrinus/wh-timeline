@@ -33,21 +33,19 @@
                 <div class="chart-viewport">
                     <div class="charts-themselves"></div>
                     <div class="x-axis-pane"></div>
+
+                    <div class="overlay state-data">
+                        <div ng-repeat="state in states" ng-style="{
+                            'left':  state.left,
+                            'width': state.width
+                        }" class="state" ng-class="state.state"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="chart-area">
-            <!-- @TODO: refactor to a separate directive -->
-            <div class="overlay state-data">
-                <div ng-repeat="state in states" ng-style="{
-                    'left':  state.left,
-                    'width': state.width
-                }" class="state" ng-class="state.state"></div>
-            </div>
-
             <wh:timeline-selections ng-model="ngModel" adjusting-selection="adjustingSelection"></wh:timeline-selections>
-
         </div>
     </div>
 

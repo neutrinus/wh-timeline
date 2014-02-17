@@ -580,8 +580,6 @@ class ChartPanePlugin
             forceUpdate: true
         })
 
-        @chartManager.renderCurrentState(true)
-
 
 angular
     .module('wh.timeline')
