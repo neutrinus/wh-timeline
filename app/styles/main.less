@@ -186,10 +186,6 @@
             width: 100%;
         }
 
-        .chart-area {
-            box-sizing: border-box;
-        }
-
         .state-data {
             z-index: 60;
 
@@ -204,7 +200,7 @@
             }
         }
 
-        .chart-area {
+        .chart-data-overlay {
 
             position: relative;
 
@@ -289,7 +285,7 @@
             }
         }
 
-        .svg-area {
+        .chart-component {
             z-index:  50;
             overflow: hidden;
 
@@ -328,7 +324,7 @@
             }
 
 
-            .chart-pane {
+            .chart-viewport {
                 position:    relative;
                 height:      @chart-viewport-height;
                 margin-left: @y-axis-width;
@@ -338,7 +334,7 @@
                 border-left: 1px dashed #000;
                 border-right: 1px dashed #000;
 
-                .chart-viewport {
+                .chart-pane {
                     .overlay-y;
                     height: @data-area-height;
 
@@ -354,7 +350,7 @@
                         }
                     }
 
-                    .charts-themselves {
+                    .charts {
                         .overlay-x;
 
                         z-index: 70;

@@ -89,7 +89,7 @@ window.TimelineController = ($scope) ->
     )
     ###
 
-    $.get('/scripts/weekly.json', (response) ->
+    $.get('scripts/weekly.json', (response) ->
         for chunk in $scope.timelineConfig.data
             if chunk.name == "Weekly"
                 chunk.raw = response
@@ -100,7 +100,7 @@ window.TimelineController = ($scope) ->
 
     a = {}
 
-    $.get('/scripts/hourly.json', (response) ->
+    $.get('scripts/hourly.json', (response) ->
         for chunk in $scope.timelineConfig.data
             if chunk.name == "Hourly"
                 chunk.raw = response

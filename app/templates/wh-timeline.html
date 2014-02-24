@@ -27,24 +27,24 @@
     </div>
 
     <div class="wh-timeline-widget">
-        <div class="overlay svg-area">
+        <div class="overlay chart-component">
             <div class="y-axis-pane"></div>
-            <div class="chart-pane">
-                <div class="chart-viewport">
-                    <div class="charts-themselves"></div>
+            <div class="chart-viewport">
+                <div class="chart-pane">
+                    <ul class="charts"></ul>
                     <div class="x-axis-pane"></div>
 
                     <div class="overlay state-data">
-                        <div ng-repeat="state in states" ng-style="{
+                        <ul ng-repeat="state in states" ng-style="{
                             'left':  state.left,
                             'width': state.width
-                        }" class="state" ng-class="state.state"></div>
+                        }" class="state" ng-class="state.state"></ul>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="chart-area">
+        <div class="chart-data-overlay">
             <wh:timeline-selections ng-model="ngModel" adjusting-selection="adjustingSelection"></wh:timeline-selections>
         </div>
     </div>

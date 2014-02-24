@@ -74,9 +74,9 @@
       var defaults;
       defaults = {
         zoom: 1,
-        chartPane: container.find('.chart-pane'),
         viewport: container.find('.chart-viewport'),
-        chartsThemselves: container.find('.charts-themselves'),
+        pane: container.find('.chart-pane'),
+        chartsThemselves: container.find('.charts'),
         yAxisPane: container.find('.y-axis-pane'),
         xAxisPane: container.find('.x-axis-pane'),
         container: container,
@@ -86,14 +86,14 @@
           width: 0,
           height: 0
         },
-        dataArea: {
+        viewportOverlay: {
           width: null,
           height: null,
           visibleWidth: null,
           stepWidth: null
         },
         initial: {
-          dataArea: {
+          viewportOverlay: {
             visibleWidth: null
           }
         }
@@ -103,8 +103,8 @@
 
     ChartViewModel.prototype.refreshDimensions = function() {
       this.refreshContainerDimensions();
-      this.refreshDataAreaDimensions();
-      return this.refreshDataAreaVisibleWidth();
+      this.refreshViewportOverlayDimensions();
+      return this.refreshViewportOverlayVisibleWidth();
     };
 
     ChartViewModel.prototype.refreshContainerDimensions = function() {
@@ -112,23 +112,23 @@
       return this.containerData.height = this.chartsThemselves.height();
     };
 
-    ChartViewModel.prototype.refreshDataAreaDimensions = function() {
-      this.dataArea.width = this.chartPane.width();
-      return this.dataArea.height = this.containerData.height;
+    ChartViewModel.prototype.refreshViewportOverlayDimensions = function() {
+      this.viewportOverlay.width = this.viewport.width();
+      return this.viewportOverlay.height = this.containerData.height;
     };
 
-    ChartViewModel.prototype.refreshDataAreaVisibleWidth = function(forceRefreshInitialWidth) {
+    ChartViewModel.prototype.refreshViewportOverlayVisibleWidth = function(forceRefreshInitialWidth) {
       if (forceRefreshInitialWidth == null) {
         forceRefreshInitialWidth = false;
       }
-      this.dataArea.visibleWidth = this.containerData.width;
-      if (forceRefreshInitialWidth || !this.initial.dataArea.visibleWidth) {
-        return this.initial.dataArea.visibleWidth = this.dataArea.visibleWidth;
+      this.viewportOverlay.visibleWidth = this.containerData.width;
+      if (forceRefreshInitialWidth || !this.initial.viewportOverlay.visibleWidth) {
+        return this.initial.viewportOverlay.visibleWidth = this.viewportOverlay.visibleWidth;
       }
     };
 
     ChartViewModel.prototype.getVisibleAreaDeltaRatio = function() {
-      return this.dataArea.visibleWidth / this.initial.dataArea.visibleWidth;
+      return this.viewportOverlay.visibleWidth / this.initial.viewportOverlay.visibleWidth;
     };
 
     return ChartViewModel;
@@ -279,7 +279,7 @@
     };
 
     D3ChartView.prototype.createYAxis = function() {
-      this.y = d3.scale.linear().range([this.renderOptions.viewModel.dataArea.height, 0]);
+      this.y = d3.scale.linear().range([this.renderOptions.viewModel.viewportOverlay.height, 0]);
       this.y.domain([0, this.renderOptions.yMax]);
       return this.yAxis = d3.svg.axis().scale(this.y).orient("left").ticks(2);
     };
@@ -373,14 +373,14 @@
       bar = this.svg.selectAll(".bar").data(this.data, function(d) {
         return d.date;
       });
-      bar.enter().append("div").attr("class", "bar rect").style("left", calcXFn).style("width", calcWidthFn).style("top", view.renderOptions.viewModel.dataArea.height + "px").style("height", 0);
+      bar.enter().append("div").attr("class", "bar rect").style("left", calcXFn).style("width", calcWidthFn).style("top", view.renderOptions.viewModel.viewportOverlay.height + "px").style("height", 0);
       bar.attr("class", "bar rect update").style("left", calcXFn).style("width", calcWidthFn).transition().duration(this.renderOptions.animDuration).style("top", function(d) {
         this.dataset._calcY = Math.ceil(view.y(d.value));
         return this.dataset._calcY + "px";
       }).style("height", function(d) {
-        return (view.renderOptions.viewModel.dataArea.height - this.dataset._calcY) + "px";
+        return (view.renderOptions.viewModel.viewportOverlay.height - this.dataset._calcY) + "px";
       });
-      return bar.exit().attr("class", "bar rect exit").style("left", calcXFn).style("width", calcWidthFn).transition().duration(this.renderOptions.animDuration).style("top", view.renderOptions.viewModel.dataArea.height + "px").style("height", "0px").remove();
+      return bar.exit().attr("class", "bar rect exit").style("left", calcXFn).style("width", calcWidthFn).transition().duration(this.renderOptions.animDuration).style("top", view.renderOptions.viewModel.viewportOverlay.height + "px").style("height", "0px").remove();
       /*
       bar.append("text")
          .attr("dy", "1.5em")
@@ -469,9 +469,9 @@
       options.viewModel = this.viewModel;
       visibleInterval = this.getMainActiveChart().chart.dataModel.visibleTimeInterval;
       milliseconds = visibleInterval.milliseconds();
-      options.renderWidth = this.viewModel.dataArea.width * this.viewModel.renderingBufferLeft + this.viewModel.dataArea.width * this.viewModel.renderingBufferRight + this.viewModel.dataArea.width;
-      options.renderBefore = this.viewModel.dataArea.width * this.viewModel.renderingBufferLeft;
-      options.renderAfter = this.viewModel.dataArea.width * this.viewModel.renderingBufferRight;
+      options.renderWidth = this.viewModel.viewportOverlay.width * this.viewModel.renderingBufferLeft + this.viewModel.viewportOverlay.width * this.viewModel.renderingBufferRight + this.viewModel.viewportOverlay.width;
+      options.renderBefore = this.viewModel.viewportOverlay.width * this.viewModel.renderingBufferLeft;
+      options.renderAfter = this.viewModel.viewportOverlay.width * this.viewModel.renderingBufferRight;
       options.renderSince = new Date(visibleInterval.start - milliseconds * this.viewModel.renderingBufferLeft);
       options.renderTo = new Date(visibleInterval.end + milliseconds * this.viewModel.renderingBufferRight);
       return options;
@@ -574,9 +574,9 @@
         elem.rendered = true;
         i++;
       }
-      this.viewModel.viewportLeft = -renderOptions.renderBefore;
-      this.viewModel.viewport.css('left', this.viewModel.viewportLeft);
-      this.viewModel.viewport.css('width', -this.viewModel.viewportLeft * 2.5);
+      this.viewModel.paneLeft = -renderOptions.renderBefore;
+      this.viewModel.pane.css('left', this.viewModel.paneLeft);
+      this.viewModel.pane.css('width', -this.viewModel.paneLeft * 2.5);
       return this.doRenderAxes(activeCharts, renderOptions);
     };
 

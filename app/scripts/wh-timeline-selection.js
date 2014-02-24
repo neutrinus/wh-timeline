@@ -527,7 +527,6 @@
       }
       this.interactionStopped = false;
       this.options = $.extend(true, {
-        viewport: $('.chart-viewport'),
         onUpdate: $.noop()
       }, options);
     }
@@ -551,7 +550,7 @@
     };
 
     StickySelectionPlugin.prototype.afterSelectionChange = function(event) {
-      var alignedProjection, boundMethod, currentDelta, currentLeft, currentRight, dataAreaWidth, deltaX, mover, oppositeEdge, projection, projectionSiblings, sameHandEdge;
+      var alignedProjection, boundMethod, currentDelta, currentLeft, currentRight, deltaX, mover, oppositeEdge, projection, projectionSiblings, sameHandEdge, viewportOverlayWidth;
       if (this.interactionStopped) {
         this.interactionStopped = false;
         return;
@@ -565,9 +564,9 @@
       event.stopPropagation();
       currentDelta = event.event.selection.atomicDelta.x;
       this.sumDelta += currentDelta;
-      dataAreaWidth = this.chartManager.viewModel.dataArea.width;
+      viewportOverlayWidth = this.chartManager.viewModel.viewportOverlay.width;
       mover = this.selectionAreaManager.options.mover;
-      mover.setup(event.activeSelection, dataAreaWidth);
+      mover.setup(event.activeSelection, viewportOverlayWidth);
       currentLeft = event.activeSelection.left;
       currentRight = event.activeSelection.right;
       if (event.activeSelection.subState === "moveLeftBound") {
@@ -589,12 +588,12 @@
     StickySelectionPlugin.prototype.computeSurroundingTicksX = function(left) {
       var date, siblings,
         _this = this;
-      date = this.chartManager.xToDate(left - this.chartManager.viewModel.viewportLeft);
+      date = this.chartManager.xToDate(left - this.chartManager.viewModel.paneLeft);
       siblings = this.chartManager.getMainActiveChart().view.findSurroundingTicks(date).map(function(x) {
-        return _this.chartManager.dateToX(x) + _this.chartManager.viewModel.viewportLeft;
+        return _this.chartManager.dateToX(x) + _this.chartManager.viewModel.paneLeft;
       });
       siblings[0] = Math.max(siblings[0], 0);
-      siblings[1] = Math.min(siblings[1], this.chartManager.viewModel.dataArea.width);
+      siblings[1] = Math.min(siblings[1], this.chartManager.viewModel.viewportOverlay.width);
       return siblings;
     };
 
@@ -623,7 +622,7 @@
       this.inProgress = false;
       this.overflow = 0;
       this.options = $.extend(true, {
-        viewport: $('.chart-viewport'),
+        pane: $('.chart-pane'),
         onUpdate: $.noop()
       }, options);
     }
@@ -637,34 +636,34 @@
     };
 
     ChartPanePlugin.prototype.animatePane = function(activeSelection) {
-      var absDeltaPx, beforeStep, dataAreaWidth, deltaPx, initialSelectionLeft, initialSelectionWidth, mover, treshold, viewport, viewportLeft, viewportWidth,
+      var absDeltaPx, beforeStep, deltaPx, initialSelectionLeft, initialSelectionWidth, mover, paneLeft, treshold, viewport, viewportOverlayWidth, viewportWidth,
         _this = this;
       if (this.overflow) {
         this.inProgress = true;
         deltaPx = this.overflow * 5;
-        treshold = this.chartManager.viewModel.dataArea.width * 3 / 5;
-        dataAreaWidth = this.chartManager.viewModel.dataArea.width;
+        treshold = this.chartManager.viewModel.viewportOverlay.width * 3 / 5;
+        viewportOverlayWidth = this.chartManager.viewModel.viewportOverlay.width;
         initialSelectionWidth = activeSelection.width;
         initialSelectionLeft = activeSelection.left;
-        viewport = this.options.viewport;
-        viewportLeft = this.chartManager.viewModel.viewportLeft;
+        viewport = this.options.pane;
+        paneLeft = this.chartManager.viewModel.paneLeft;
         viewportWidth = viewport.width();
         if (deltaPx < 0) {
           deltaPx = Math.max(deltaPx, -treshold);
-          if (viewportLeft > deltaPx) {
+          if (paneLeft > deltaPx) {
             this.onCloseToBoundary(true);
           }
         } else {
           deltaPx = Math.min(deltaPx, treshold);
-          if (viewportLeft - deltaPx < -this.chartManager.computeRenderOptions([]).renderWidth + this.chartManager.viewModel.dataArea.width) {
+          if (paneLeft - deltaPx < -this.chartManager.computeRenderOptions([]).renderWidth + this.chartManager.viewModel.viewportOverlay.width) {
             this.onCloseToBoundary(false);
           }
         }
-        viewportLeft = this.chartManager.viewModel.viewportLeft;
+        paneLeft = this.chartManager.viewModel.paneLeft;
         beforeStep = $.noop;
         if (activeSelection.state === "compose") {
           mover = this.selectionAreaManager.options.mover;
-          mover.setup(activeSelection, dataAreaWidth);
+          mover.setup(activeSelection, viewportOverlayWidth);
           absDeltaPx = Math.abs(deltaPx);
           if (activeSelection.subState === "moveLeftBound") {
             deltaPx = -this.selectionAreaManager.options.mover.calcPossibleRightBoundMovement(-deltaPx, false);
@@ -686,19 +685,19 @@
           textIndent: 0
         }, {
           progress: function(animation, progress, remainingMs) {
-            var newViewportLeft, stepDeltaPx;
+            var newpaneLeft, stepDeltaPx;
             if (_this.interactionStopped) {
               return;
             }
             stepDeltaPx = Math.round(progress * deltaPx + 0.00001);
             beforeStep(Math.abs(stepDeltaPx));
-            newViewportLeft = viewportLeft - stepDeltaPx;
-            _this.chartManager.viewModel.viewportLeft = newViewportLeft;
+            newpaneLeft = paneLeft - stepDeltaPx;
+            _this.chartManager.viewModel.paneLeft = newpaneLeft;
             return _this.options.onUpdate({
               selection: activeSelection,
               viewportBounds: {
-                left: -newViewportLeft,
-                right: -newViewportLeft + dataAreaWidth
+                left: -newpaneLeft,
+                right: -newpaneLeft + viewportOverlayWidth
               }
             });
           },
@@ -725,28 +724,27 @@
     ChartPanePlugin.prototype.afterSelectionChange = function(event) {
       this.overflow = event.activeSelection.overflow;
       if (this.inProgress) {
-        this.options.viewport.stop();
+        this.options.pane.stop();
       }
       this.chartManager.suppressRendering(true);
       return this.animatePane(event.activeSelection);
     };
 
     ChartPanePlugin.prototype.afterSelectionFinish = function(event) {
-      return this.options.viewport.stop();
+      return this.options.pane.stop();
     };
 
     ChartPanePlugin.prototype.onCloseToBoundary = function(isLeftBoundary) {
-      var dataAreaWidth, left, renderOptions, width;
+      var left, renderOptions, viewportOverlayWidth;
       renderOptions = this.chartManager.computeRenderOptions([]);
-      dataAreaWidth = this.chartManager.viewModel.dataArea.width;
-      left = this.options.viewport.position().left;
-      width = this.options.viewport.width();
-      this.options.viewport.stop();
+      viewportOverlayWidth = this.chartManager.viewModel.viewportOverlay.width;
+      left = this.options.pane.position().left;
+      this.options.pane.stop();
       return this.options.onUpdate({
         type: "onCloseToBoundary",
         viewportBounds: {
           left: -left,
-          right: -left + dataAreaWidth
+          right: -left + viewportOverlayWidth
         },
         forceUpdate: true
       });

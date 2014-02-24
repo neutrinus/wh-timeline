@@ -131,7 +131,7 @@
     )
     */
 
-    $.get('/scripts/weekly.json', function(response) {
+    $.get('scripts/weekly.json', function(response) {
       var chunk, _i, _len, _ref;
       _ref = $scope.timelineConfig.data;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -145,7 +145,7 @@
       return $scope.$apply();
     });
     a = {};
-    $.get('/scripts/hourly.json', function(response) {
+    $.get('scripts/hourly.json', function(response) {
       var chunk, _i, _len, _ref;
       _ref = $scope.timelineConfig.data;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {

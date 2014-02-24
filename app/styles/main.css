@@ -211,9 +211,6 @@
   height: 100%;
   width: 100%;
 }
-.wh-timeline .wh-timeline-widget .chart-area {
-  box-sizing: border-box;
-}
 .wh-timeline .wh-timeline-widget .state-data {
   z-index: 60;
   overflow: hidden;
@@ -232,21 +229,21 @@
 .wh-timeline .wh-timeline-widget .state-data .state.loaded {
   background: #EAFFEF;
 }
-.wh-timeline .wh-timeline-widget .chart-area {
+.wh-timeline .wh-timeline-widget .chart-data-overlay {
   position: relative;
   box-sizing: border-box;
   width: 100%;
   height: 130px;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections {
   z-index: 80;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area {
   position: absolute;
   height: 100%;
   cursor: move;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .resize-handler {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .resize-handler {
   position: absolute;
   z-index: 89;
   top: 50%;
@@ -255,17 +252,17 @@
   margin-top: -16.5px;
   cursor: ew-resize;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .resize-handler.left {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .resize-handler.left {
   left: -6px;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .resize-handler.right {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .resize-handler.right {
   right: -6px;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .resize-handler svg path {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .resize-handler svg path {
   fill: #eee;
   stroke: #666;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .fixation-delimiter {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .fixation-delimiter {
   position: absolute;
   z-index: 90;
   top: 0;
@@ -274,63 +271,63 @@
   background: #000;
   box-shadow: 0px 0 3px #000;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .fixation-delimiter.left {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .fixation-delimiter.left {
   left: 0;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area .fixation-delimiter.right {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area .fixation-delimiter.right {
   right: 0;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area.point {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area.point {
   width: 1px !important;
   background: #000;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area.point .resize-handler.right {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area.point .resize-handler.right {
   display: none;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area.point .fixation-delimiter {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area.point .fixation-delimiter {
   display: none;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area.sticky,
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area.sticky .resize-handler {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area.sticky,
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area.sticky .resize-handler {
   cursor: default;
 }
-.wh-timeline .wh-timeline-widget .chart-area .selections .selection-area.period {
+.wh-timeline .wh-timeline-widget .chart-data-overlay .selections .selection-area.period {
   background: rgba(0, 255, 255, 0.6);
 }
-.wh-timeline .wh-timeline-widget .svg-area {
+.wh-timeline .wh-timeline-widget .chart-component {
   z-index: 50;
   overflow: hidden;
 }
-.wh-timeline .wh-timeline-widget .svg-area .y-axis-pane {
+.wh-timeline .wh-timeline-widget .chart-component .y-axis-pane {
   position: absolute;
   z-index: 88;
   width: 26px;
   height: 100%;
 }
-.wh-timeline .wh-timeline-widget .svg-area .y-axis-pane svg {
+.wh-timeline .wh-timeline-widget .chart-component .y-axis-pane svg {
   position: absolute;
   right: -1px;
 }
 @media only screen and (-webkit-min-device-pixel-ratio: 0) {
-  .wh-timeline .wh-timeline-widget .svg-area .y-axis-pane svg {
+  .wh-timeline .wh-timeline-widget .chart-component .y-axis-pane svg {
     right: 0px;
   }
 }
-.wh-timeline .wh-timeline-widget .svg-area .x.axis {
+.wh-timeline .wh-timeline-widget .chart-component .x.axis {
   position: relative;
   z-index: 87;
 }
-.wh-timeline .wh-timeline-widget .svg-area svg .axis {
+.wh-timeline .wh-timeline-widget .chart-component svg .axis {
   font: 10px sans-serif;
   z-index: 101;
 }
-.wh-timeline .wh-timeline-widget .svg-area svg .axis path,
-.wh-timeline .wh-timeline-widget .svg-area svg .axis line {
+.wh-timeline .wh-timeline-widget .chart-component svg .axis path,
+.wh-timeline .wh-timeline-widget .chart-component svg .axis line {
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport {
   position: relative;
   height: 240px;
   margin-left: 25px;
@@ -339,14 +336,14 @@
   border-left: 1px dashed #000;
   border-right: 1px dashed #000;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
   height: 130px;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .x-axis-pane {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .x-axis-pane {
   position: absolute;
   top: 0;
   left: 0;
@@ -356,11 +353,11 @@
   left: 1px;
 }
 @media only screen and (-webkit-min-device-pixel-ratio: 0) {
-  .wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .x-axis-pane {
+  .wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .x-axis-pane {
     left: 0px;
   }
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts {
   position: absolute;
   top: 0;
   left: 0;
@@ -368,37 +365,37 @@
   z-index: 70;
   height: 130px;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg .axis.x path {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg .axis.x path {
   display: none;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg .bar {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg .bar {
   position: absolute;
   border: 1px solid #fff;
   box-sizing: content-box;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg.inactive {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.inactive {
   z-index: 100;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg.inactive .bar {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.inactive .bar {
   background: #808080;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg.active.secondary .axis {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.secondary .axis {
   display: none;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg.active.secondary .bar {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.secondary .bar {
   background: brown;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg.active.main .bar {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.main .bar {
   background: #4682b4;
   opacity: 0.8;
 }
-.wh-timeline .wh-timeline-widget .svg-area .chart-pane .chart-viewport .charts-themselves .svg.active.main .bar:hover {
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.main .bar:hover {
   opacity: 0.5;
 }
 .wh-timeline-debug {

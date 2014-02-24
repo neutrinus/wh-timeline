@@ -108,7 +108,7 @@
             chartManager.setActiveCharts(scope.visibleTimePerspectives);
             return whTimeline.render();
           };
-          scope.chartManager = chartManager = new D3ChartManager(new ChartViewModel(element.find('.wh-timeline-widget .svg-area')));
+          scope.chartManager = chartManager = new D3ChartManager(new ChartViewModel(element.find('.wh-timeline-widget .chart-component')));
           chartManager.beforeRender = function() {
             if (!scope.$$phase && !scope.$root.$$phase) {
               return scope.$apply();
@@ -458,7 +458,7 @@
               viewValue.visible_end = Math.max(viewValue.selected_end, viewValue.visible_start + visibleSeconds);
             }
             visibleSeconds = viewValue.visible_end - viewValue.visible_start;
-            visibleArea = whTimeline.getChartManager().viewModel.dataArea.width;
+            visibleArea = whTimeline.getChartManager().viewModel.viewportOverlay.width;
             calcBinWidth = function(binWidth) {
               var binWidthRatio;
               binWidthRatio = visibleSeconds / binWidth;
@@ -466,7 +466,7 @@
             };
             binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth);
             if (binWidthPx < 10) {
-              binPerspectiveData = whTimeline.getBinPerspectiveData();
+              binPerspectiveData = whTimeline.getSortedPerspectiveDetails();
               for (i = _i = _ref2 = binPerspectiveData.length - 1; _i >= 0; i = _i += -1) {
                 chunk = binPerspectiveData[i];
                 binWidthPx = calcBinWidth(chunk.bin_width);
@@ -552,7 +552,7 @@
               selectionRight = selectionLeft;
             }
             selectionWidth = selectionRight - selectionLeft;
-            scope.selectionManager.selections[0].left = selectionLeft + whTimeline.getChartManager().viewModel.viewportLeft;
+            scope.selectionManager.selections[0].left = selectionLeft + whTimeline.getChartManager().viewModel.paneLeft;
             return scope.selectionManager.selections[0].width = selectionWidth;
           };
           ngModel.$formatters.unshift(function(modelValue) {
@@ -587,7 +587,7 @@
             }
             newSelection = scope.selectionManager.selections[0];
             viewModel = whTimeline.getChartManager().viewModel;
-            from = -viewModel.viewportLeft + newSelection.left;
+            from = -viewModel.paneLeft + newSelection.left;
             to = from + newSelection.width - 2;
             if (ngModel.$viewValue.is_period) {
               from -= 1;
@@ -599,8 +599,8 @@
             invertedEndDate = whTimeline.getChartManager().xToDate(to);
             ngModel.$viewValue.selected_start = getUnix(invertedStartDate);
             ngModel.$viewValue.selected_end = getUnix(invertedEndDate);
-            ngModel.$viewValue.visible_start = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.viewportLeft)));
-            ngModel.$viewValue.visible_end = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.viewportLeft + viewModel.dataArea.width)));
+            ngModel.$viewValue.visible_start = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.paneLeft)));
+            ngModel.$viewValue.visible_end = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.paneLeft + viewModel.viewportOverlay.width)));
             whTimeline.setSelectionModifiedByUser();
             ngModel.$setViewValue(ngModel.$viewValue);
             return scope.$apply();
@@ -617,8 +617,8 @@
               width: activeSelection.width,
               left: Math.ceil(activeSelection.left + 0.00001) - 1
             });
-            chartManager.viewModel.viewport.css({
-              left: chartManager.viewModel.viewportLeft
+            chartManager.viewModel.pane.css({
+              left: chartManager.viewModel.paneLeft
             });
             if (options.forceUpdate) {
               return updateModel();
@@ -660,6 +660,7 @@
                   ngModel.$viewValue.selected_end += deltaMs;
                 }
                 ngModel.$viewValue.selected_end = Math.max(ngModel.$viewValue.selected_start, ngModel.$viewValue.selected_end);
+                ngModel.$viewValue.selected_end = Math.min(ngModel.$viewValue.visible_end, ngModel.$viewValue.selected_end);
                 ngModel.$setViewValue($.extend({}, ngModel.$viewValue));
                 ngModel.$render();
                 scope.$apply();

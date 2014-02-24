@@ -34,9 +34,9 @@ class ChartViewModel
         defaults =
             zoom: 1,
 
-            chartPane: container.find('.chart-pane')
             viewport:  container.find('.chart-viewport')
-            chartsThemselves: container.find('.charts-themselves')
+            pane:      container.find('.chart-pane')
+            chartsThemselves: container.find('.charts')
             yAxisPane: container.find('.y-axis-pane')
             xAxisPane: container.find('.x-axis-pane')
             container: container
@@ -48,7 +48,7 @@ class ChartViewModel
                 width:   0,
                 height:  0,
 
-            dataArea:
+            viewportOverlay:
                 width:  null,
                 height: null,
 
@@ -56,29 +56,29 @@ class ChartViewModel
                 stepWidth: null          # Immutable
 
             initial:
-                dataArea:
+                viewportOverlay:
                     visibleWidth: null   # Immutable
         $.extend(@, defaults)
 
     refreshDimensions: ->
         @refreshContainerDimensions()
-        @refreshDataAreaDimensions()
-        @refreshDataAreaVisibleWidth()
+        @refreshViewportOverlayDimensions()
+        @refreshViewportOverlayVisibleWidth()
 
     refreshContainerDimensions: ->
         @containerData.width  = @container.width()
         @containerData.height = @chartsThemselves.height()
 
-    refreshDataAreaDimensions: ->
-        @dataArea.width  = @chartPane.width()
-        @dataArea.height = @containerData.height
+    refreshViewportOverlayDimensions: ->
+        @viewportOverlay.width  = @viewport.width()
+        @viewportOverlay.height = @containerData.height
 
-    refreshDataAreaVisibleWidth: (forceRefreshInitialWidth=false) ->
-        @dataArea.visibleWidth = @containerData.width
-        if forceRefreshInitialWidth or not @initial.dataArea.visibleWidth
-            @initial.dataArea.visibleWidth = @dataArea.visibleWidth
+    refreshViewportOverlayVisibleWidth: (forceRefreshInitialWidth=false) ->
+        @viewportOverlay.visibleWidth = @containerData.width
+        if forceRefreshInitialWidth or not @initial.viewportOverlay.visibleWidth
+            @initial.viewportOverlay.visibleWidth = @viewportOverlay.visibleWidth
 
-    getVisibleAreaDeltaRatio: -> @dataArea.visibleWidth / @initial.dataArea.visibleWidth
+    getVisibleAreaDeltaRatio: -> @viewportOverlay.visibleWidth / @initial.viewportOverlay.visibleWidth
 
 class Chart
     constructor: (@dataModel) ->
@@ -146,7 +146,7 @@ class D3ChartView extends ChartView
         # @x.clamp(true) # breaks our wonderful xTicks function :(
         @x.range([
             0,
-            @renderOptions.renderWidth # @renderOptions.viewModel.dataArea.visibleWidth
+            @renderOptions.renderWidth # @renderOptions.viewModel.viewportOverlay.visibleWidth
         ])
         @x.domain([
             @renderOptions.renderSince,
@@ -181,7 +181,7 @@ class D3ChartView extends ChartView
 
 
     createYAxis: ->
-        @y = d3.scale.linear().range([@renderOptions.viewModel.dataArea.height, 0])
+        @y = d3.scale.linear().range([@renderOptions.viewModel.viewportOverlay.height, 0])
         @y.domain [0, @renderOptions.yMax]
         @yAxis = d3.svg.axis().scale(@y).orient("left").ticks(2) #, "%")
 
@@ -267,7 +267,7 @@ class HistogramView extends D3HTMLChartView
 
             .style("left",   calcXFn)
             .style("width",  calcWidthFn)
-            .style("top",    view.renderOptions.viewModel.dataArea.height+"px")
+            .style("top",    view.renderOptions.viewModel.viewportOverlay.height+"px")
             .style("height", 0)
 
         bar.attr("class", "bar rect update")
@@ -280,7 +280,7 @@ class HistogramView extends D3HTMLChartView
                     return @dataset._calcY+"px"
                 )
                 .style("height", (d) ->
-                    (view.renderOptions.viewModel.dataArea.height - @dataset._calcY)+"px"
+                    (view.renderOptions.viewModel.viewportOverlay.height - @dataset._calcY)+"px"
                 )
 
         bar.exit()
@@ -293,7 +293,7 @@ class HistogramView extends D3HTMLChartView
             .duration(@renderOptions.animDuration)
                 #.style("left",   calcXFn)
                 #.style("width",  calcWidthFn)
-                .style("top",     view.renderOptions.viewModel.dataArea.height+"px")
+                .style("top",     view.renderOptions.viewModel.viewportOverlay.height+"px")
                 .style("height", "0px")
                 .remove()
 
@@ -360,11 +360,11 @@ class ChartManager
         visibleInterval = @getMainActiveChart().chart.dataModel.visibleTimeInterval # @TXC initial.visibleTimeInterval
         milliseconds = visibleInterval.milliseconds()
 
-        options.renderWidth  = @viewModel.dataArea.width * @viewModel.renderingBufferLeft \
-                             + @viewModel.dataArea.width * @viewModel.renderingBufferRight \
-                             + @viewModel.dataArea.width
-        options.renderBefore = @viewModel.dataArea.width * @viewModel.renderingBufferLeft
-        options.renderAfter  = @viewModel.dataArea.width * @viewModel.renderingBufferRight
+        options.renderWidth  = @viewModel.viewportOverlay.width * @viewModel.renderingBufferLeft \
+                             + @viewModel.viewportOverlay.width * @viewModel.renderingBufferRight \
+                             + @viewModel.viewportOverlay.width
+        options.renderBefore = @viewModel.viewportOverlay.width * @viewModel.renderingBufferLeft
+        options.renderAfter  = @viewModel.viewportOverlay.width * @viewModel.renderingBufferRight
         options.renderSince  = new Date(visibleInterval.start - milliseconds * @viewModel.renderingBufferLeft)
         options.renderTo     = new Date(visibleInterval.end   + milliseconds * @viewModel.renderingBufferRight)
         
@@ -426,10 +426,10 @@ class D3ChartManager extends ChartManager
             i++
 
         # @TODO: Refactor out
-        #if not @viewModel.viewportLeft
-        @viewModel.viewportLeft = -renderOptions.renderBefore
-        @viewModel.viewport.css('left',   @viewModel.viewportLeft) # @TXC comment this line
-        @viewModel.viewport.css('width', -@viewModel.viewportLeft*2.5) # @TXC comment this line
+        #if not @viewModel.paneLeft
+        @viewModel.paneLeft = -renderOptions.renderBefore
+        @viewModel.pane.css('left',   @viewModel.paneLeft) # @TXC comment this line
+        @viewModel.pane.css('width', -@viewModel.paneLeft*2.5) # @TXC comment this line
 
         @doRenderAxes(activeCharts, renderOptions)
 

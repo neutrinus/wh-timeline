@@ -397,7 +397,6 @@ class StickySelectionPlugin
     constructor: (@chartManager, options={}) ->
         @interactionStopped = false
         @options = $.extend(true, {
-            viewport:       $('.chart-viewport'),
             onUpdate:       $.noop()
         }, options)
 
@@ -427,10 +426,10 @@ class StickySelectionPlugin
         currentDelta = event.event.selection.atomicDelta.x
         @sumDelta   += currentDelta
 
-        dataAreaWidth = @chartManager.viewModel.dataArea.width
+        viewportOverlayWidth = @chartManager.viewModel.viewportOverlay.width
 
         mover = @selectionAreaManager.options.mover
-        mover.setup event.activeSelection, dataAreaWidth
+        mover.setup event.activeSelection, viewportOverlayWidth
 
         currentLeft  = event.activeSelection.left
         currentRight = event.activeSelection.right
@@ -455,12 +454,12 @@ class StickySelectionPlugin
         mover[boundMethod](deltaX)
 
     computeSurroundingTicksX: (left) ->
-        date = @chartManager.xToDate(left - @chartManager.viewModel.viewportLeft)
+        date = @chartManager.xToDate(left - @chartManager.viewModel.paneLeft)
         siblings = @chartManager.getMainActiveChart().view.findSurroundingTicks(date).map(
-            (x) => @chartManager.dateToX(x) + @chartManager.viewModel.viewportLeft
+            (x) => @chartManager.dateToX(x) + @chartManager.viewModel.paneLeft
         )
         siblings[0] = Math.max(siblings[0], 0)
-        siblings[1] = Math.min(siblings[1], @chartManager.viewModel.dataArea.width)
+        siblings[1] = Math.min(siblings[1], @chartManager.viewModel.viewportOverlay.width)
 
         return siblings
 
@@ -479,7 +478,7 @@ class ChartPanePlugin
         @overflow = 0
 
         @options = $.extend(true, {
-            viewport:       $('.chart-viewport'),
+            pane:           $('.chart-pane'), # @TODO
             onUpdate:       $.noop()
         }, options)
 
@@ -495,33 +494,33 @@ class ChartPanePlugin
             @inProgress = true
 
             deltaPx = @overflow * 5
-            treshold =  @chartManager.viewModel.dataArea.width * 3/5
-            dataAreaWidth = @chartManager.viewModel.dataArea.width
+            treshold =  @chartManager.viewModel.viewportOverlay.width * 3/5
+            viewportOverlayWidth = @chartManager.viewModel.viewportOverlay.width
 
             initialSelectionWidth = activeSelection.width # sel.width()
             initialSelectionLeft  = activeSelection.left  # sel.position().left
 
-            viewport = @options.viewport
-            viewportLeft = @chartManager.viewModel.viewportLeft # viewport.position().left
+            viewport = @options.pane
+            paneLeft = @chartManager.viewModel.paneLeft # viewport.position().left
             viewportWidth = viewport.width()
 
             # If we are close to rendered boundaries let's re-render the chart
             if deltaPx < 0
                 deltaPx = Math.max(deltaPx, -treshold)
-                if viewportLeft > deltaPx
+                if paneLeft > deltaPx
                     @onCloseToBoundary(true)
             else
                 deltaPx = Math.min(deltaPx, treshold)
-                if viewportLeft - deltaPx < -@chartManager.computeRenderOptions([]).renderWidth + @chartManager.viewModel.dataArea.width
+                if paneLeft - deltaPx < -@chartManager.computeRenderOptions([]).renderWidth + @chartManager.viewModel.viewportOverlay.width
                     @onCloseToBoundary(false)
 
-            viewportLeft = @chartManager.viewModel.viewportLeft # refresh
+            paneLeft = @chartManager.viewModel.paneLeft # refresh
 
             # Move viewport and possibly extend selection
             beforeStep = $.noop
             if activeSelection.state == "compose"
                 mover = @selectionAreaManager.options.mover
-                mover.setup(activeSelection, dataAreaWidth)
+                mover.setup(activeSelection, viewportOverlayWidth)
 
                 absDeltaPx = Math.abs(deltaPx)
 
@@ -544,13 +543,13 @@ class ChartPanePlugin
                     return if @interactionStopped
                     stepDeltaPx = Math.round(progress * deltaPx + 0.00001)
                     beforeStep(Math.abs(stepDeltaPx))
-                    newViewportLeft = viewportLeft - stepDeltaPx
-                    @chartManager.viewModel.viewportLeft = newViewportLeft
+                    newpaneLeft = paneLeft - stepDeltaPx
+                    @chartManager.viewModel.paneLeft = newpaneLeft
                     @options.onUpdate({
                         selection:       activeSelection
                         viewportBounds:  {
-                            left:  -newViewportLeft
-                            right: -newViewportLeft + dataAreaWidth
+                            left:  -newpaneLeft
+                            right: -newpaneLeft + viewportOverlayWidth
                         }
                     })
 
@@ -570,27 +569,26 @@ class ChartPanePlugin
     afterSelectionChange: (event) ->
         @overflow = event.activeSelection.overflow
         if @inProgress
-            @options.viewport.stop()
+            @options.pane.stop()
         @chartManager.suppressRendering(true)
         @animatePane(event.activeSelection)
 
     afterSelectionFinish: (event) ->
-        @options.viewport.stop()
+        @options.pane.stop()
 
     onCloseToBoundary: (isLeftBoundary) ->
         renderOptions = @chartManager.computeRenderOptions([])
 
-        dataAreaWidth = @chartManager.viewModel.dataArea.width
-        left = @options.viewport.position().left
-        width = @options.viewport.width()
+        viewportOverlayWidth = @chartManager.viewModel.viewportOverlay.width
+        left = @options.pane.position().left
 
-        @options.viewport.stop()
+        @options.pane.stop()
 
         @options.onUpdate({
             type: "onCloseToBoundary"
             viewportBounds:  {
                 left:  -left
-                right: -left + dataAreaWidth
+                right: -left + viewportOverlayWidth
             },
             forceUpdate: true
         })
