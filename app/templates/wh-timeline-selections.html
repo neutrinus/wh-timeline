@@ -2,7 +2,7 @@
     <div class="selection-area"
          ng-class="{'period': ngModel.is_period, 'point': !ngModel.is_period, 'sticky': selectionManager.activeSelection && selectionManager.selections[0].isClicked }">
 
-        <div class="resize-handler left"  ng-press-toggle="selectionManager.params.resize.left">
+        <div class="resize-handler left"  wh-press-toggle="selectionManager.params.resize.left">
             <svg width="7" height="33">
                 <g>
                     <path d="M0,0A6.5,6 0 0 1 6.5,6V27A6,6 0 0 1 0,33ZM2.5,8V25M4.5,8V25"
@@ -11,7 +11,7 @@
             </svg>
         </div>
 
-        <div class="resize-handler right" ng-press-toggle="selectionManager.params.resize.right">
+        <div class="resize-handler right" wh-press-toggle="selectionManager.params.resize.right">
             <svg width="7" height="33">
                 <g>
                     <path d="M0,0A6.5,6 0 0 1 6.5,6V27A6,6 0 0 1 0,33ZM2.5,8V25M4.5,8V25"

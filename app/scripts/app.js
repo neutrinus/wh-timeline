@@ -508,4 +508,6 @@
 
 }).call(this);
 
-//# sourceMappingURL=../../app/scripts/app.js.map
+/*
+//@ sourceMappingURL=app.js.map
+*/

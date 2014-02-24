@@ -770,4 +770,6 @@
 
 }).call(this);
 
-//# sourceMappingURL=../../app/scripts/wh-timeline-selection.js.map
+/*
+//@ sourceMappingURL=wh-timeline-selection.js.map
+*/

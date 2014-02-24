@@ -27,7 +27,10 @@
     "load-grunt-tasks": "~0.1.0",
     "time-grunt": "~0.1.1",
     "grunt-connect-rewrite": "~0.2.0",
-    "grunt-angular-templates": "~0.5.1"
+    "grunt-angular-templates": "~0.5.1",
+    "jshint-stylish": "~0.1.5",
+    "grunt-contrib-less": "~0.9.0",
+    "grunt-docular": "~0.1.2"
   },
   "engines": {
     "node": ">=0.8.0"

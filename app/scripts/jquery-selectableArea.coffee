@@ -1,4 +1,5 @@
-
+# SelectableArea plugin for jQuery - all it does is tracking absolute and step delta X and Y
+# starting after mouse click and ending after release
 class SelectableAreaPlugin
 
     constructor: (@pane, options={}) ->
@@ -32,7 +33,6 @@ class SelectableAreaPlugin
         @bindModel()
         @bindEvents()
 
-    # @TODO: consider accessors
     updateModel: ->
         minX = Math.min(@model.initial.x, @model.current.x)
         maxX = Math.max(@model.initial.x, @model.current.x)

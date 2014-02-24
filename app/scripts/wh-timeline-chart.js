@@ -1,35 +1,18 @@
+/**
+* @ngdoc service
+* @name wh.timeline.chart.ChartDataModel
+*
+* @description
+* Stores chart related model data such as visible time perspectiveor binWidth
+*
+*/
+
+
 (function() {
-  var Chart, ChartDataModel, ChartManager, ChartView, ChartViewModel, D3ChartManager, D3ChartView, D3HTMLChartView, HistogramView, SimpleStateRenderer, StateRenderer, _ref, _ref1, _ref2,
+  var Chart, ChartDataModel, ChartManager, ChartView, ChartViewModel, D3ChartManager, D3ChartView, D3HTMLChartView, HistogramView, _ref, _ref1,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
-  StateRenderer = (function() {
-    function StateRenderer() {}
-
-    StateRenderer.prototype.setup = function(manager) {
-      this.manager = manager;
-    };
-
-    StateRenderer.prototype.render = function() {};
-
-    return StateRenderer;
-
-  })();
-
-  SimpleStateRenderer = (function(_super) {
-    __extends(SimpleStateRenderer, _super);
-
-    function SimpleStateRenderer() {
-      _ref = SimpleStateRenderer.__super__.constructor.apply(this, arguments);
-      return _ref;
-    }
-
-    SimpleStateRenderer.prototype.render = function() {};
-
-    return SimpleStateRenderer;
-
-  })(StateRenderer);
 
   ChartDataModel = (function() {
     function ChartDataModel(perspective, binWidth) {
@@ -68,6 +51,16 @@
     return ChartDataModel;
 
   })();
+
+  /**
+  * @ngdoc service
+  * @name wh.timeline.chart.ChartViewModel
+  *
+  * @description
+  * Stores chart related view data such as viewport size or axes containers
+  *
+  */
+
 
   ChartViewModel = (function() {
     function ChartViewModel(container) {
@@ -135,6 +128,15 @@
 
   })();
 
+  /**
+  * @ngdoc service
+  * @name wh.timeline.chart.Chart
+  *
+  * @description
+  * Chart object, at the moment it's just a wrapper for ChartDataModel
+  */
+
+
   Chart = (function() {
     function Chart(dataModel) {
       this.dataModel = dataModel;
@@ -144,6 +146,15 @@
 
   })();
 
+  /**
+  * @ngdoc object
+  * @name wh.timeline.chart.ChartView
+  *
+  * @description
+  * Abstract class for a reference of what methods are necessary
+  */
+
+
   ChartView = (function() {
     function ChartView() {}
 
@@ -152,6 +163,15 @@
     return ChartView;
 
   })();
+
+  /**
+  * @ngdoc object
+  * @name wh.timeline.chart.D3ChartView
+  *
+  * @description
+  * Abstract ChartView implementation for D3 chart library
+  */
+
 
   D3ChartView = (function(_super) {
     __extends(D3ChartView, _super);
@@ -163,8 +183,8 @@
     }
 
     D3ChartView.prototype.allXTicks = function() {
-      var cacheKey, countTo, from, ticksData, to, _ref1;
-      _ref1 = this.x.domain(), from = _ref1[0], to = _ref1[1];
+      var cacheKey, countTo, from, ticksData, to, _ref;
+      _ref = this.x.domain(), from = _ref[0], to = _ref[1];
       /*
       @data[0].date
       to = @data[@data.length-1].date
@@ -216,14 +236,14 @@
     };
 
     D3ChartView.prototype.prepareData = function() {
-      var bin, renderSinceUnix, renderToUnix, _i, _len, _ref1, _results;
+      var bin, renderSinceUnix, renderToUnix, _i, _len, _ref, _results;
       this.data = [];
       renderSinceUnix = this.renderOptions.renderSince / 1000;
       renderToUnix = this.renderOptions.renderTo / 1000;
-      _ref1 = this.chart.dataModel.processedRawData;
+      _ref = this.chart.dataModel.processedRawData;
       _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        bin = _ref1[_i];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        bin = _ref[_i];
         if (bin.start > renderToUnix || bin.end < renderSinceUnix) {
           continue;
         }
@@ -261,14 +281,14 @@
         }
       }).call(this);
       subInterval = function(from, to, step) {
-        var e, _i, _len, _ref1, _results;
+        var e, _i, _len, _ref, _results;
         if (step == null) {
           step = 1;
         }
-        _ref1 = interval(from, to, 1);
+        _ref = interval(from, to, 1);
         _results = [];
-        for ((step > 0 ? (_i = 0, _len = _ref1.length) : _i = _ref1.length - 1); step > 0 ? _i < _len : _i >= 0; _i += step) {
-          e = _ref1[_i];
+        for ((step > 0 ? (_i = 0, _len = _ref.length) : _i = _ref.length - 1); step > 0 ? _i < _len : _i >= 0; _i += step) {
+          e = _ref[_i];
           _results.push(e);
         }
         return _results;
@@ -314,12 +334,21 @@
 
   })(ChartView);
 
+  /**
+  * @ngdoc object
+  * @name wh.timeline.chart.D3HTMLChartView
+  *
+  * @description
+  * Abstract D3ChartView implementation for HTML charts
+  */
+
+
   D3HTMLChartView = (function(_super) {
     __extends(D3HTMLChartView, _super);
 
     function D3HTMLChartView() {
-      _ref1 = D3HTMLChartView.__super__.constructor.apply(this, arguments);
-      return _ref1;
+      _ref = D3HTMLChartView.__super__.constructor.apply(this, arguments);
+      return _ref;
     }
 
     D3HTMLChartView.prototype.processSkeleton = function() {
@@ -345,12 +374,21 @@
 
   })(D3ChartView);
 
+  /**
+  * @ngdoc service
+  * @name wh.timeline.chart.view.Histogram
+  *
+  * @description
+  * Histogram chart view implementation
+  */
+
+
   HistogramView = (function(_super) {
     __extends(HistogramView, _super);
 
     function HistogramView() {
-      _ref2 = HistogramView.__super__.constructor.apply(this, arguments);
-      return _ref2;
+      _ref1 = HistogramView.__super__.constructor.apply(this, arguments);
+      return _ref1;
     }
 
     HistogramView.prototype.redraw = function() {
@@ -363,10 +401,10 @@
         return this.dataset._calcX + "px";
       };
       calcWidthFn = function(d) {
-        var calcX, next, prev, ticks, _ref3;
+        var calcX, next, prev, ticks, _ref2;
         ticks = view.allXTicks();
         calcX = this.dataset._calcX;
-        _ref3 = view.findSurroundingTicks(d.date, 1), prev = _ref3[0], next = _ref3[1];
+        _ref2 = view.findSurroundingTicks(d.date, 1), prev = _ref2[0], next = _ref2[1];
         this.dataset._calcWidth = tv(next) - tv(prev) - 1;
         return this.dataset._calcWidth + "px";
       };
@@ -395,6 +433,15 @@
 
   })(D3HTMLChartView);
 
+  /**
+  * @ngdoc object
+  * @name wh.timeline.chart.ChartManager
+  *
+  * @description
+  * Abstract ChartManager implementation
+  */
+
+
   ChartManager = (function() {
     function ChartManager() {
       this.beforeRender = $.noop;
@@ -406,12 +453,25 @@
       };
     }
 
-    ChartManager.prototype.manageChart = function(chart, viewType) {
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#manageChart
+    *
+    * @param {Chart} chart          Chart to manage
+    * @param {ChartView} viewClass  ChartView class object that should be used to rendered this chart
+    *
+    * @description
+    * Adds chart to pool of charts managed by this manager
+    */
+
+
+    ChartManager.prototype.manageChart = function(chart, viewClass) {
       var perspective;
       perspective = chart.dataModel.perspective;
       return this.pool[perspective] = {
         chart: chart,
-        view: new viewType(chart),
+        view: new viewClass(chart),
         rendered: false
       };
     };
@@ -428,16 +488,47 @@
       return delete this.pool[perspective];
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#xToDate
+    *
+    * @param {integer} x  X coordinate within chart pane
+    *
+    * @return {date} Date that is currently represented by X coordinate
+    */
+
+
     ChartManager.prototype.xToDate = function(x) {};
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#dateToX
+    *
+    * @param {Date} date  Date to convert
+    *
+    * @return {integer} X coordinate that is represented by date
+    */
+
 
     ChartManager.prototype.dateToX = function(date) {};
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#getActiveCharts
+    *
+    * @return {array} array of active charts, first one is the main one
+    */
+
+
     ChartManager.prototype.getActiveCharts = function() {
-      var active, perspective, _i, _len, _ref3;
+      var active, perspective, _i, _len, _ref2;
       active = [];
-      _ref3 = this.activePerspectives;
-      for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
-        perspective = _ref3[_i];
+      _ref2 = this.activePerspectives;
+      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+        perspective = _ref2[_i];
         active.push(this.pool[perspective]);
       }
       return active;
@@ -447,6 +538,17 @@
       return this.getActiveCharts().shift();
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#setActiveCharts
+    *
+    * @param {array} perspectives Time perspective names
+    *
+    * @description Tells this ChartManager about time perspectives that are supposed to be active
+    */
+
+
     ChartManager.prototype.setActiveCharts = function(perspectives) {
       if (Object.prototype.toString.call(perspectives) !== '[object Array]') {
         perspectives = [perspectives];
@@ -455,13 +557,13 @@
     };
 
     ChartManager.prototype.computeRenderOptions = function(charts) {
-      var chunk, elem, milliseconds, options, visibleInterval, _i, _j, _len, _len1, _ref3;
+      var chunk, elem, milliseconds, options, visibleInterval, _i, _j, _len, _len1, _ref2;
       options = $.extend({}, this.defaultRenderOptions);
       for (_i = 0, _len = charts.length; _i < _len; _i++) {
         elem = charts[_i];
-        _ref3 = elem.chart.dataModel.processedRawData;
-        for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
-          chunk = _ref3[_j];
+        _ref2 = elem.chart.dataModel.processedRawData;
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          chunk = _ref2[_j];
           options.yMax = Math.max(options.yMax, chunk.value);
         }
       }
@@ -478,11 +580,11 @@
     };
 
     ChartManager.prototype.updateVisibleTimeInterval = function(interval) {
-      var elem, perspective, _ref3, _results;
-      _ref3 = this.pool;
+      var elem, perspective, _ref2, _results;
+      _ref2 = this.pool;
       _results = [];
-      for (perspective in _ref3) {
-        elem = _ref3[perspective];
+      for (perspective in _ref2) {
+        elem = _ref2[perspective];
         _results.push(elem.chart.dataModel.updateVisibleTimeInterval(interval));
       }
       return _results;
@@ -496,7 +598,7 @@
     };
 
     ChartManager.prototype.renderCurrentState = function(force) {
-      var activeCharts, elem, perspective, renderOptions, _ref3;
+      var activeCharts, elem, perspective, renderOptions, _ref2;
       if (force == null) {
         force = false;
       }
@@ -509,9 +611,9 @@
       }
       this.beforeRender();
       renderOptions = this.computeRenderOptions(activeCharts);
-      _ref3 = this.pool;
-      for (perspective in _ref3) {
-        elem = _ref3[perspective];
+      _ref2 = this.pool;
+      for (perspective in _ref2) {
+        elem = _ref2[perspective];
         if (elem.rendered && __indexOf.call(this.activePerspectives, perspective) < 0) {
           elem.view.unrender($.extend(renderOptions, {
             className: "inactive"
@@ -535,6 +637,15 @@
     return ChartManager;
 
   })();
+
+  /**
+  * @ngdoc service
+  * @name wh.timeline.chart.D3ChartManager
+  *
+  * @description
+  * D3.js-based ChartManager implementation
+  */
+
 
   D3ChartManager = (function(_super) {
     __extends(D3ChartManager, _super);
@@ -619,4 +730,6 @@
 
 }).call(this);
 
-//# sourceMappingURL=../../app/scripts/wh-timeline-chart.js.map
+/*
+//@ sourceMappingURL=wh-timeline-chart.js.map
+*/

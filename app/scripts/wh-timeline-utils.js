@@ -87,4 +87,6 @@
 
 }).call(this);
 
-//# sourceMappingURL=../../app/scripts/wh-timeline-utils.js.map
+/*
+//@ sourceMappingURL=wh-timeline-utils.js.map
+*/

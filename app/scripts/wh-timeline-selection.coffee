@@ -1,4 +1,10 @@
 
+###*
+* @ngdoc service
+* @name wh.timeline.selection.SelectionArea
+*
+* @description POJO object holding pixel-wise information about the selection
+###
 class SelectionArea
     constructor: (@left, @width) ->
         @state = 'none' # none, compose, move, resize-left, resize-right
@@ -21,6 +27,12 @@ class SelectionArea
         configurable: yes
     }
 
+###*
+* @ngdoc object
+* @name wh.timeline.selection.SelectionAreaMover
+*
+* @description Internal class that performs calculations related to moving a selection
+###
 class SelectionAreaMover
 
     constructor: ->
@@ -29,6 +41,17 @@ class SelectionAreaMover
 
     setup: (@area, @paneWidth) ->
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#handle
+    *
+    * @param {SelectionArea} area
+    * @param {integer} paneWidth
+    * @param {event} e event received from SelectableAreaPlugin
+    *
+    * @description Handles an event received from SelectableAreaPlugin, sets this mover's
+    * state, and moves the selection accordingly
+    ###
     handle: (area, paneWidth, e) ->
         @setup(area, paneWidth)
 
@@ -63,9 +86,29 @@ class SelectionAreaMover
 
         return true
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#getLeftMargin
+    *
+    * @return {integer} distanve between left edge of the selection and pane's left edge
+    ###
     getLeftMargin:  -> @area.left
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#getRightMargin
+    *
+    * @return {integer} distanve between right edge of the selection and pane's right edge
+    ###
     getRightMargin: -> @paneWidth - @area.width - @area.left
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#handleOverflowMove
+    *
+    * @param {object} bounds  current selection bounds
+    * @param {integer} deltaX current mouse movement
+    * @description handles
+    ###
     handleOverflowMove:  (bounds, deltaX) ->
         # If selection sticked to the left and mouse is either (inside the selection AND moving to the left) or outside of the pane
         if @area.left == 0 and not (deltaX > 0 and bounds.left > 0)

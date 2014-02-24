@@ -1,7 +1,10 @@
 
 'use strict'
 
+# Private function - converts date to unix timestamp
 getUnix = (date=new Date())-> Math.floor(date.getTime()/1000+0.0000001)
+
+# Private function for handy object comprehension
 to_hash = (pairs) ->
     hash = {}
     hash[key] = value for [key, value] in pairs
@@ -9,28 +12,238 @@ to_hash = (pairs) ->
 
 angular
     .module('wh.timeline', ['ui.date','ui.bootstrap.timepicker'])
+
+###*
+* @ngdoc service
+* @name wh.timeline.utils.configIsolator
+*
+* @description
+* Handy service for isolating and merging part of configuration from more complex objects
+* Used by child directives of wh:timeline.
+*
+* @example
+<example>
+    <file name="app.js">
+        angular.module('test')
+           .directive('isolated', [
+                'wh.timeline.utils.configIsolator',
+                function(configIsolator) {
+                    return {
+                        scope: { config: '=' },
+                        require: 'ngModel',
+                        link: function(scope, element, attrs, ngModel)
+                        {
+                            ngModel.$formatters.unshift(function(modelValue) {
+                                return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
+                            });
+
+                            ngModel.$parsers.push(function(viewValue) {
+                                return configIsolator.merge(scope.ngModel, viewValue)
+                            });
+                        }
+                    }
+                }
+            ])
+        ;
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .service('wh.timeline.utils.configIsolator', ->
-        return {
-            isolate: (complete, properties) ->
-                viewValue = {}
-                for p in properties
-                    viewValue[p] = complete[p]
-                return viewValue
+        def = {}
+        ###*
+        * @ngdoc method
+        * @methodOf wh.timeline.utils.configIsolator
+        * @name     wh.timeline.utils.configIsolator#isolate
+        * @param {object}  Complete Full configuration to process
+        * @param {array}   Properties Object keys to extract
+        * @description     Extracts given properties from object
+        * @return {object} Extracted properties
+        * @example
+        <example></example>
+        ###
+        def.isolate = (complete, properties) ->
+            viewValue = {}
+            for p in properties
+                viewValue[p] = complete[p]
+            return viewValue
 
-            merge:   (complete, isolated) ->
-                modelValue = {}
-                for k,v of isolated
-                    if k of complete
-                        modelValue[k] = v
+        ###*
+        * @ngdoc method
+        * @methodOf wh.timeline.utils.configIsolator
+        * @name     wh.timeline.utils.configIsolator#merge
+        * @param {object}  complete Full configuration
+        * @param {array}   isolated Processed isolated object
+        * @description     Merges processed properties back to the object
+        * @return {object} Merged properties
+        * @example
+        <example></example>
+        ###
+        def.merge = (complete, isolated) ->
+            modelValue = {}
+            for k,v of isolated
+                if k of complete
+                    modelValue[k] = v
 
-                for k,v of complete
-                    unless k of modelValue
-                        modelValue[k] = v
+            for k,v of complete
+                unless k of modelValue
+                    modelValue[k] = v
 
-                return modelValue
-        }
+            return modelValue
+
+        return def
     )
-    .directive('whTimeline', [
+
+###*
+* @ngdoc directive
+* @name wh:timeline
+* @requires wh.timeline.chart.Chart wh.timeline.chart.ChartDataModel wh.timeline.chart.ChartViewModel wh.timeline.chart.D3ChartManager wh.timeline.chart.view.Histogram wh.timeline.utils.TimeInterval wh.timeline.utils.configIsolator $timeout $interval $q $window $templateCache
+* @param {databinding} ngModel configuration object used by this directive and child directives, See example below
+*
+* @description
+* Creates a timeline widget that allows selection of either time range, or point in time (depending on configuration)
+*
+* @example
+<example>
+    <file name="app.js">
+        $scope.timelineConfig = {
+            is_period: true,               # Select either period of time or point in time
+
+            selected_start: 1385856000,    # December 1, 2013, midnight
+            selected_end: 1388849426,      # January 4, 2013, 15:30:26
+
+            visible_start: 1370044800,     # - 3600 # June 1, 2013, midnight
+            visible_end:   1388849426,     # January 4, 2013, 15:30:26 # 1388530800
+
+            is_start_tracked: false,       # Initial state of selection start tracking (changing the date as time passes)
+            is_end_tracked: true,          # Initial state of selection end tracking (changing the date as time passes) - may not be false if is_start_tracked is true
+
+            predefined_choices: [
+                # December 1, 2013 -- January 1, 2014
+                {
+                  start: 1385856000,    end: 1388534400,
+                  start_tracked: false, end_tracked: false,
+                  name: "Last full month"
+                },
+
+                # December 5, 2013, 15:30:26 -- January 4, 2013, 15:30:26
+                {
+                  start: 1386257426,   end: 1388849426,
+                  start_tracked: true, end_tracked: true,
+                  name: "Last 30 days"
+                },
+
+                # January 1, 1970, 0:00 -- January 4, 2013, 15:30:26
+                {
+                  start: 1199464226,    end: 1388849426,
+                  start_tracked: false, end_tracked: true,
+                  name: "Last 5 years"
+                }
+            ],
+            data: [
+                {
+                    name: "Yearly",            # name of time perspective, allowed names: Yearly, Monthly, Weekly, Daily, Hourly, Minutely
+                    bin_width: 60*60*24*365,   # about 365 days
+                    active: false,             # not visible
+                    epoch_raw: 0,              # when this is changed, raw data is re-rendered
+                    raw: [],                   # no data loaded yet
+                    epoch_state: 0,            # when this is changed, state data is re-rendered
+                    state: []                  # no data loaded yet
+                },
+                {
+                    name: "Daily",
+                    bin_width: 60*60*24,
+                    active: false,
+                    epoch_raw: 123,
+                    raw: [
+                        { start: 1377993600, end: 1377993600 + 60*60*24, value: 14 } # September 2013
+                    ],
+                    epoch_state: 442,
+                    state: [
+                    ]
+                },
+                {
+                    name: "Monthly",
+                    bin_width: 60*60*24*30,    # about 30 days
+                    active: true,
+                    epoch_raw: 314159,
+                    raw: [
+                        #{ start: 1391212800, end: 1393632000, value: 5 }, # February 2013
+                        #{ start: 1393632000, end: 1396310400, value: 10 }, # March 2013
+
+                        { start: 1377993600, end: 1380585600, value: 11 }, # September 2013
+                        { start: 1380585600, end: 1383271200, value: 13 }, # October 2013
+                        # note: missing November data.
+                        { start: 1385863200, end: 1388541600-7200, value: 14 }  # December 2013
+                        { start: 1388541600-7200, end: 1391541600, value: 15 }  # December 2013
+                    ],
+                    epoch_state: 924657,
+                    state: [
+                        # September 2013 - October 15, 2013
+                        { start: 1377993600, end: 1381795200, state: "loaded" },
+
+                        # October 15, 2013 - October 22, 2013
+                        { start: 1381795200, end: 1382400000, state: "missing" },
+
+                        # October 22, 2013 - December 1, 2013
+                        { start: 1382400000, end: 1385856000, state: "computing" },
+
+                        # December 1, 2013 - January 1, 2014
+                        { start: 1385856000, end: 1388541600, state: "loaded" }
+                    ]
+                },
+                {
+                    name: "Weekly",
+                    bin_width: 60*60*24*7,     # about 7 days
+                    active: true,
+                    epoch_raw: 123,
+                    raw: [
+                        { start: 1377302400, end: 1377907200, value: 10.000000 },
+                        { start: 1377907200, end: 1378512000, value: 10.499167 },
+                        { start: 1378512000, end: 1379116800, value: 10.993347 },
+                        { start: 1379116800, end: 1379721600, value: 11.477601 },
+                        { start: 1379721600, end: 1380326400, value: 11.947092 },
+                        { start: 1380326400, end: 1380931200, value: 12.397128 },
+                        { start: 1380931200, end: 1381536000, value: 12.823212 },
+                        { start: 1381536000, end: 1382140800, value: 13.221088 },
+                        { start: 1382140800, end: 1382745600, value: 13.586780 },
+                        { start: 1382745600, end: 1383350400, value: 13.916635 },
+                        { start: 1383350400, end: 1383955200, value: 14.207355 },
+                        { start: 1383955200, end: 1384560000, value: 14.456037 },
+                        { start: 1384560000, end: 1385164800, value: 14.660195 },
+                        { start: 1385164800, end: 1385769600, value: 14.817791 },
+                        { start: 1385769600, end: 1386374400, value: 14.927249 },
+                        { start: 1386374400, end: 1386979200, value: 14.987475 },
+                        { start: 1386979200, end: 1387584000, value: 14.997868 },
+                        { start: 1387584000, end: 1388188800, value: 14.958324 },
+                        { start: 1388188800, end: 1388793600, value: 14.869238 },
+                        { start: 1388793600, end: 1389398400, value: 14.731500 },
+                        { start: 1389398400, end: 1390003200, value: 14.546487 },
+                        { start: 1390003200, end: 1390608000, value: 14.316047 },
+                        { start: 1390608000, end: 1391212800, value: 14.042482 },
+                        { start: 1391212800, end: 1391817600, value: 13.728526 },
+                        { start: 1391817600, end: 1392422400, value: 13.377316 },
+                        { start: 1392422400, end: 1393027200, value: 12.992361 },
+                        { start: 1393027200, end: 1393632000, value: 12.577507 },
+                        { start: 1393632000, end: 1394236800, value: 12.136899 },
+                        { start: 1394236800, end: 1394841600, value: 11.674941 },
+                        { start: 1394841600, end: 1395446400, value: 11.196247 }
+                    ],
+                    epoch_state: 442,
+                    state: [
+                        { start: 1377302400, end: 1395446400, state: "loaded" }
+                    ]
+                }
+            ]
+        }
+    </file>
+    <file name="index.html">
+        <wh-timeline ng-model="timelineConfig"></wh-timeline>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
+       .directive('whTimeline', [
         'wh.timeline.chart.Chart',
         'wh.timeline.chart.ChartDataModel',
         'wh.timeline.chart.ChartViewModel',
@@ -58,7 +271,7 @@ angular
 
                     [ngModel, whTimeline] = controllers
 
-                    # Some general stuff {{{
+                    # General information {{{
                     window.scope = scope
                     scope.adjustingSelection = false
                     scope.visibleTimePerspectives = null;
@@ -70,6 +283,7 @@ angular
 
                     # -------------------------
 
+                    # Helper function
                     findDataForTimePerspective = (perspective, dataType) ->
                         for chunk in ngModel.$modelValue.data
                             if chunk.name == perspective
@@ -77,6 +291,7 @@ angular
 
                     # -------------------------
 
+                    # Updates the visible time perspective and redraws chart
                     scope.setTimePerspectives = (newTimePerspectives) ->
                         return if angular.equals newTimePerspectives, scope.visibleTimePerspectives
 
@@ -109,13 +324,18 @@ angular
 
                     # We need to recalculate visible time interval before rendering the chart
                     chartManager.beforeRender = -> scope.$apply() if not scope.$$phase and not scope.$root.$$phase
+
+                    # Once chartManager is ready, we may resolve the promise
                     chartManagerDeferred.resolve(chartManager)
 
+                    # Whenever window is resized we need to adjust pane
                     angular.element($window).bind('resize', =>
                         chartManager.refreshPaneDimensions()
                         scope.$apply()
                     )
 
+                    # Whenever epoch_state or raw_state changes (or sum of all of them),
+                    # we need to update raw and state data
                     scope.$watch((
                         -> (elem.epoch_state+elem.epoch_raw for elem in ngModel.$modelValue.data).reduce (t,s) -> t+s
                     ), ((current, previous) ->
@@ -129,11 +349,13 @@ angular
                         whTimeline.render()
                     ), true)
 
+                    # Whenever visible bounds are updated, we need to update the view
                     scope.$watchCollection('[ngModel.visible_start, ngModel.visible_end]', ( ->
                         chartManager.updateVisibleTimeInterval(scope.getVisibleTimeInterval())
                         whTimeline.render()
                     ))
 
+                    # Whenever selected bounds are updated, let's merge the change to the current model
                     scope.$watch((-> configIsolator.isolate(scope.ngModel, ['selected_start','selected_end'])), ((newV, oldV) ->
                         return if newV == oldV
                         if scope.selectionModifiedByUser
@@ -142,7 +364,7 @@ angular
                         scope.ngModel = configIsolator.merge(scope.ngModel, newV)
                     ), true)
 
-                    # State data (colors in background):
+                    # Processing state data (colors in background):
                     scope.states = []
                     scope.updateStateData = ->
                         main = chartManager.getMainActiveChart()
@@ -157,6 +379,7 @@ angular
                             }
                         return scope.states
 
+                    # SelectionConfig pane hiding (in case user clicked outside of it)
                     $(document).on('click', (e) =>
                         $target = $(e.target)
                         if $target.closest(element).length == 0 && $target.closest('.wh-timeline-config').length == 0 \
@@ -195,9 +418,11 @@ angular
                         } for item in $scope.ngModel.data)
                         binPerspectiveData.sort (e1,e2) -> e1.bin_width < e2.bin_width
                         return binPerspectiveData
+
                     @setSelectionModifiedByUser = -> scope.selectionModifiedByUser = true
                     @isSelectionModifiedByUser = -> scope.selectionModifiedByUser
                     @updateStateData = -> $scope.updateStateData()
+
                     @render = (force=false) ->
                         @getChartManager().renderCurrentState(force)
                         $scope.updateStateData()
@@ -206,7 +431,28 @@ angular
         )
     ])
 
-    .directive('whTimelinePerspectivePicker',
+###*
+* @ngdoc directive
+* @name wh:timeline-perspective-picker
+* @requires $templateCache wh.timeline.utils.configIsolator
+* @param {databinding} ngModel the same configuration object as wh:timeline which is used for rendering and is also updated whenever user is interacting with the widget
+*
+* @description
+* Perspective switcher for the timeline widget, rendered as +/- buttons, provides event handler for mouse scroll.
+* If perspective level can't be zoomed more (because selected time period is too long), then
+* code from on-zoom-rejected attribute is called.
+*
+* @example
+<example>
+    <file name="index.html">
+        <wh:timeline-perspective-picker
+            ng-model="ngModel"
+            on-zoom-rejected="zoomRejected=true"></wh:timeline-perspective-picker>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
+       .directive('whTimelinePerspectivePicker',
         ['$templateCache', 'wh.timeline.utils.configIsolator', ($templateCache, configIsolator) -> {
             restrict: 'E'
             replace: true
@@ -219,6 +465,7 @@ angular
             link: (scope, element, attrs, controllers) ->
                 [ngModel, whTimeline] = controllers
 
+                # Formatting model updates
                 ngModel.$formatters.unshift (modelValue) ->
                     viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
@@ -236,6 +483,7 @@ angular
 
                     return viewValue
 
+                # Formatting view updates
                 ngModel.$parsers.push (viewValue) ->
                     modelValue = configIsolator.merge(scope.ngModel, viewValue)
 
@@ -249,6 +497,7 @@ angular
                 scope.available = null
                 scope.binWidths = null
 
+                # Switching the time perspective
                 scope.switch = (how) ->
                     switch how
                         when '+',  1, true  then deltaIdx =  1
@@ -298,8 +547,8 @@ angular
 
                     whTimeline.setVisibleTimePerspectives scope.visible
 
-
-                element.closest('.wh-timeline').find('.chart-area').bind('mousewheel', (e) ->
+                # Let's switch the time perspective on scroll
+                element.closest('.wh-timeline').find('.chart-data-overlay').bind('mousewheel', (e) ->
                     e.preventDefault()
                     scope.switch(e.deltaY > 0)
                     scope.$apply() if not scope.$$phase and not scope.$root.$$phase
@@ -307,8 +556,37 @@ angular
         }]
     )
 
+###*
+* @ngdoc directive
+* @name wh:timeline-selection-config
+* @requires $timeout $templateCache wh.timeline.utils.configIsolator'
+* @param {databinding} ngModel the same configuration object as wh:timeline which is used for rendering and is also updated whenever user is interacting with the widget
 
-    .directive('whTimelineSelectionConfig', [
+* @description
+* Selection configuration widget, allows selection manipulation with following widgets:
+* * calendar
+* * timepicker (3 inputs with arrows and scrolling)
+* * datepicker (3 inputs)
+*
+* This directive may influence following ngModel:
+*
+* * selected_start    - basic feature, there is GUI for that
+* * selected_end      - basic feature, there is GUI for that
+* * visible_start     - if chosen selection either cannot fit within current visible bounds, or is so small it would be barely visible
+* * visible_end       - same as above
+* * is_start_tracked  - basic feature, there is GUI for that
+* * is_end_tracked    - basic feature, there is GUI for that
+* * data[].active     - visible time perspective may be modified if selected time span is too long/short
+*
+* @example
+<example>
+    <file name="index.html">
+        <wh:timeline-selection-config ng-model="ngModel"></wh:timeline-selection-config>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
+       .directive('whTimelineSelectionConfig', [
         '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator',
         (($timeout, $templateCache, configIsolator) ->
             return {
@@ -335,6 +613,7 @@ angular
                     scope.start = null
                     scope.end = null
 
+                    # If internal selected dates are modified, let's update view value accordingly
                     scope.$watch('[start, end]', ((timestamps, oldTimestamps) ->
                         return if timestamps == oldTimestamps
                         return if timestamps[0] == ngModel.$modelValue.selected_start and timestamps[1] == ngModel.$modelValue.selected_end
@@ -343,6 +622,7 @@ angular
                         ngModel.$setViewValue ngModel.$viewValue
                     ), true)
 
+                    # If model tracking values are modified, let's update view value accordingly
                     scope.$watch('[ngModel.is_start_tracked, ngModel.is_end_tracked]', ((newV, oldV) ->
                         if scope.ngModel.is_start_tracked and not scope.ngModel.is_end_tracked
                             [scope.ngModel.is_start_tracked, scope.ngModel.is_end_tracked] = oldV
@@ -352,11 +632,13 @@ angular
                         ngModel.$setViewValue ngModel.$viewValue
                     ), true)
 
+                    # Process model changes and extract necessary data
                     ngModel.$formatters.push (modelValue) ->
                         scope.start = modelValue.selected_start
                         scope.end   = modelValue.selected_end
                         return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
+                    # Process and parse view changes
                     ngModel.$parsers.push (viewValue) ->
                         unless viewValue.is_period
                             viewValue.selected_end = viewValue.selected_start
@@ -413,6 +695,7 @@ angular
                     # Predefined choices {{{
                     scope.predefinedChoice = null
 
+                    # When new predefinedChoice is selected, let's update all dates accordingly
                     scope.$watch('predefinedChoice', (newChoice) ->
                         return unless newChoice
 
@@ -445,7 +728,35 @@ angular
         )
     ])
 
-    .directive('whTimelineSelections', [
+###*
+* @ngdoc directive
+* @name wh:timeline-selections
+* @requires $timeout $interval $templateCache wh.timeline.selection.plugin.ChartPanePlugin wh.timeline.selection.plugin.StickySelectionPlugin wh.timeline.selection.SelectionAreaManager wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver wh.timeline.selection.SelectionArea wh.timeline.utils.configIsolator
+* @scope
+* @restrict E
+* @param {databinding} ngModel which is used for rendering and is also updated whenever user is interacting with the widget
+* @param {databinding} adjustingSelection which is set to true whenever user is interacting with the widget
+*
+* @description
+* Selection rendering / updating widget. Selection can be composed / updated via drag & drop
+*
+* It requires the same configuration object as wh:timeline directive and it may influence following values:
+* * selected_start    - basic feature
+* * selected_end      - basic feature
+* * visible_start     - if selection is moved close to the left  boundary
+* * visible_end       - if selection is moved close to the right boundary
+*
+* @example
+<example>
+    <file name="index.html">
+        <wh:timeline-selections
+            ng-model="ngModel"
+            adjusting-selection="adjustingSelection"></wh:timeline-selections>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
+       .directive('whTimelineSelections', [
         '$timeout',
         '$interval',
         '$templateCache',
@@ -474,7 +785,7 @@ angular
                     selectionPane = element
                     selectionElement = -> element.find('.selection-area')
 
-                    # Adjusting selection {{{
+                    # Control visibility of selection adjustment configuration  {{{
                     oldSelection = null;
                     element.on('mousedown', '.selection-area', =>
                         oldSelection = $.extend(true, {}, scope.selectionManager.selections[0])
@@ -491,6 +802,7 @@ angular
 
                     # -------------------------
 
+                    # Helper function that updates selection's X and width accordingly to dates specified in viewValue
                     recalculateSelectionView = (viewValue) ->
                         selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000))
 
@@ -503,6 +815,7 @@ angular
                         scope.selectionManager.selections[0].left =  selectionLeft  + whTimeline.getChartManager().viewModel.paneLeft
                         scope.selectionManager.selections[0].width = selectionWidth
 
+                    # Basing on new selected dates, let's update selection's X and width accordingly
                     ngModel.$formatters.unshift (modelValue) ->
                         viewValue = configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
@@ -514,9 +827,11 @@ angular
 
                         return viewValue
 
+                    # Whenever view value changes, let's merge those changes to the model
                     ngModel.$parsers.push (viewValue) ->
                         return configIsolator.merge(scope.ngModel, viewValue)
 
+                    # Rendering is simply animating the selection element to it's current position
                     ngModel.$render = ->
                         #unless whTimeline.isSelectionModifiedByUser()
                         #    scope.selectionManager.stopInteraction()
@@ -530,6 +845,7 @@ angular
 
                     # -------------------------
 
+                    # Helper function that converts selected dates and visible coordinates to appropriate timestamps
                     updateModel = ->
                         return unless scope.selectionManager.selections.length
 
@@ -545,14 +861,7 @@ angular
                             from += 1
                             to += 2
 
-                        #if from == 0
-                        #    invertedStartDate = new Date(ngModel.$viewValue.visible_start*1000)
-                        #else
                         invertedStartDate = whTimeline.getChartManager().xToDate(from)
-
-                        #if to == scope.paneWidth - 1
-                        #    invertedEndDate = new Date(ngModel.$viewValue.visible_end*1000)
-                        #else
                         invertedEndDate = whTimeline.getChartManager().xToDate(to)
 
                         ngModel.$viewValue.selected_start = getUnix(invertedStartDate)
@@ -568,6 +877,9 @@ angular
 
                     throttledUpdateModel = _.throttle(updateModel, 300)
 
+                    # On each interaction event from either selection manager or it's plugins,
+                    # let's update CSS on selection element and chart pane, AND update model
+                    # at most once per 300 milliseconds (unless options.forceUpdate == true)
                     chartManager = null
                     onUserInteraction = (options) ->
                         if options.type == "onCloseToBoundary"
@@ -589,6 +901,7 @@ angular
                         else
                             throttledUpdateModel()
 
+                    # Let's setup selection manager as soon as ChartManager is ready
                     whTimeline.chartManagerPromise().then((createdChartManager) ->
                         chartManager = createdChartManager
 
@@ -613,10 +926,10 @@ angular
                         }))
                     )
 
-                    # -- Tracking feature {{{
+                    # -- Time tracking feature {{{
                     prevTime = getUnix()
 
-                    # $interval calls $apply() each time regardless of the fourth param!!
+                    # setInterval used because $interval calls $apply() each time regardless of the fourth param!!
                     setInterval((->
                         newTime = getUnix()
 
@@ -626,6 +939,9 @@ angular
                         isPoint = not scope.ngModel.is_period
 
                         if activeSelection and activeSelection.state == 'none' and deltaMs
+                            # If at least one boundary is tracked and at least one second passed
+                            # since the last iteration, let's update selection dates accordingly
+
                             if ngModel.$viewValue.is_from_tracked or ngModel.$viewValue.is_end_tracked
                                 if ngModel.$viewValue.is_start_tracked or isPoint
                                     ngModel.$viewValue.selected_start += deltaMs
@@ -645,12 +961,6 @@ angular
                                     ngModel.$viewValue.selected_end
                                 )
 
-                                #ngModel.$modelValue.selected_from = ngModel.$viewValue.selected_from
-                                #ngModel.$modelValue.selected_end = ngModel.$viewValue.selected_end
-
-                                #scope.ngModel.selected_start = ngModel.$viewValue.selected_start
-                                #scope.ngModel.selected_end = ngModel.$viewValue.selected_end
-
                                 ngModel.$setViewValue($.extend {}, ngModel.$viewValue)
                                 ngModel.$render()
 
@@ -664,7 +974,26 @@ angular
         )
     ])
 
-    .directive('ngPressToggle', ['$parse', ($parse) ->
+###*
+* @ngdoc directive
+* @name wh:press-toggle
+* @requires $parse
+* @restrict A
+* @param {databinding} ngPressToggle value that is set to true when toggle is active and to false when it is not
+*
+* @description
+* Tracks toggle state of an element. When mouse button pressed on given element, toggle state is 1. When mouse
+* button is released (on this or any other element), toggle state is set to 0
+*
+* @example
+<example>
+    <file name="index.html">
+        <input wh-press-toggle="isToggled" />
+    </file>
+</example>
+###
+angular.module('wh.timeline')
+    .directive('whPressToggle', ['$parse', ($parse) ->
 
         mouseupCallbackNo = 0
         mouseupCallbacks = {}
@@ -676,7 +1005,6 @@ angular
         )
 
         return {
-            priority: 100
             link: (scope, element, attr) ->
                 isPressedIn = false
                 outCallbackNo = ++mouseupCallbackNo
@@ -697,10 +1025,27 @@ angular
         }
     ])
 
+
+###*
+* @ngdoc directive
+* @name wh:timeline-debug
+* @restrict E
+* @param {databinding} config whTimeline configuration object
+*
+* @description
+* Displays some debugging information related to the current state of whTimeline directive
+*
+* @example
+<example>
+    <file name="index.html">
+        <wh:timeline-debug config="timelineConfig"></wh:timeline-debug>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .directive('whTimelineDebug', [
         ( ->
             return {
-                priority: 91
                 restrict: 'E'
                 replace: true
                 scope: {
@@ -711,6 +1056,27 @@ angular
         )
     ])
 
+###*
+* @ngdoc directive
+* @name wh:timepicker-unix
+* @restrict E
+* @scope
+* @param {databinding} ngModel Date object
+*
+* @description
+* Slim wrapper around the timepicker directive to ensure UTC timezone
+*
+* @example
+<example>
+    <file name="app.js">
+        $scope.date = new Date();
+    </file>
+    <file name="index.html">
+        <timepicker ng-model="date"></timepicker>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .directive('timepickerUnix', [
         ( ->
             return {
@@ -721,7 +1087,6 @@ angular
                 link: (scope, element, attr, ngModel) ->
                     ngModel.$render = ->
                         date = if ngModel.$modelValue then new Date( ngModel.$modelValue * 1000 ) else null
-
                         scope.date = date
 
                     scope.$watch('date', (newV, oldV) ->
@@ -732,45 +1097,26 @@ angular
         )
     ])
 
-    .directive('ngPressIn', ($parse) ->
-
-        mouseupCallbackNo = 0
-        mouseupCallbacks = {}
-
-        $(document).on('mouseup', ->
-            for k,callback of mouseupCallbacks
-                callback()
-            null
-        )
-
-        return {
-            priority: 100
-            link: (scope, element, attr) ->
-                isPressedIn = false
-                outCallbackNo = false
-
-                if attr['ngPressIn']
-                    onPressStart = $parse(attr['ngPressIn'])
-                    element.bind 'mousedown', (event) ->
-                        isPressedIn = true
-                        scope.$apply -> onPressStart(scope, {$event: event})
-
-                if attr['ngPressOut']
-                    outCallbackNo = ++mouseupCallbackNo
-                    onPressEnd = $parse(attr['ngPressOut'])
-                    mouseupCallbacks[outCallbackNo] = ->
-                        return unless isPressedIn
-                        isPressedIn = false
-
-                        scope.$apply -> onPressEnd(scope, {$event: event})
-
-                scope.$on('$destroy', ->
-                    if outCallbackNo != false
-                        delete mouseupCallbacks[outCallbackNo]
-                )
-        }
-    )
-
+###*
+* @ngdoc directive
+* @name ui:utc-unix-date
+* @param {databinding} ngModel Date object
+*
+* @description
+* Slim wrapper ensuring UTC timezone processing. May be used with any directive working with the date object
+* which assumes local timezone should be used.
+*
+* @example
+<example>
+    <file name="app.js">
+        $scope.date = new Date();
+    </file>
+    <file name="index.html">
+        <div ui-date ui-utc-unix-date ng-model="date"></div>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .directive('uiUtcUnixDate', ->
         require: 'ngModel'
         link: (scope, element, attrs, modelCtrl) ->
@@ -802,6 +1148,26 @@ angular
                 return parseInt((date.getTime()+'').slice(0,-3))
     )
 
+###*
+* @ngdoc directive
+* @name ui:utc-unix-date
+* @param {databinding} ngModel Unix timestamp
+*
+* @description
+* Slim wrapper that allows passing unix timestamp to any directive which
+* expects Date object
+*
+* @example
+<example>
+    <file name="app.js">
+        $scope.timestamp = 1199464226;
+    </file>
+    <file name="index.html">
+        <div ui-date ui-unix-date ng-model="timestamp"></div>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .directive('uiUnixDate', ->
         require: 'ngModel'
         link: (scope, element, attrs, modelCtrl) ->
@@ -815,6 +1181,28 @@ angular
                 return parseInt((utcDate.getTime()+'').slice(0,-3))
     )
 
+###*
+* @ngdoc directive
+* @name datepicker-inputs
+* @restrict: E
+* @scope
+* @require $templateCache $log
+* @param {databinding} ngModel Date object
+*
+* @description
+* Widget that allows easy modification of year/month/day parts of any date object
+*
+* @example
+<example>
+    <file name="app.js">
+        $scope.date = new Date();
+    </file>
+    <file name="index.html">
+        <datepicker-inputs ng-model="date"></datepicker-inputs>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .directive('datepickerInputs',
         ['$templateCache', '$log', ($templateCache, $log) -> {
             restrict: 'E'
@@ -879,6 +1267,25 @@ angular
         }]
     )
 
+###*
+* @ngdoc directive
+* @name ng:blink
+* @restrict: A
+* @scope
+* @param {databinding} ngBlink Boolean indicator of current visibility state
+*
+* @description
+* Shows element whenever ngBlink binding is set to true and hides it 3500 ms later
+*
+* @example
+<example>
+    <file name="index.html">
+        <button ng-click="showWarning=true">Show warning</button>
+        <span ng-blink="showWarning">Warning it is</span>
+    </file>
+</example>
+###
+angular.module('wh.timeline')
     .directive('ngBlink', ->
         restrict: 'A'
         scope: {
@@ -892,17 +1299,3 @@ angular
                 element.finish().fadeIn().delay(3500).fadeOut()
             )
      )
-
-    .directive('ngScroll', ['$parse', ($parse)  ->
-        return (scope, element, attr) ->
-            fn = $parse(attr.ngScroll);
-
-            element.bind('mousewheel', (event) ->
-                scope.$apply(->
-                    fn(scope, {
-                        $event: event
-                    });
-                );
-            );
-     ]);
-

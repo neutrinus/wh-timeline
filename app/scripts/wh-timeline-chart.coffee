@@ -1,24 +1,25 @@
-# Just a mock class for a reference of what methods are necessary
-class StateRenderer
-    setup: (@manager) ->
-    render: ->
 
-class SimpleStateRenderer extends StateRenderer
-    render: ->
-
+###*
+* @ngdoc service
+* @name wh.timeline.chart.ChartDataModel
+*
+* @description
+* Stores chart related model data such as visible time perspectiveor binWidth
+*
+###
 class ChartDataModel
 
     constructor: (perspective, binWidth) ->
         defaults =
-            perspective: perspective        # Immutable
-            binWidth: binWidth              # Immutable
-            visibleTimeInterval: null       # Mutable
+            perspective: perspective
+            binWidth: binWidth
+            visibleTimeInterval: null
 
-            processedRawData: null          # Mutable
-            processedStateData: null        # Mutable
+            processedRawData: null
+            processedStateData: null
 
             initial:
-                visibleTimeInterval: null   # Immutable
+                visibleTimeInterval: null
         $.extend(@, defaults)
 
     updateVisibleTimeInterval: (@visibleTimeInterval, forceRefreshInitialWidth=false) ->
@@ -27,7 +28,14 @@ class ChartDataModel
     updateRaw: (@processedRawData) ->
     updateState: (@processedStateData) ->
 
-
+###*
+* @ngdoc service
+* @name wh.timeline.chart.ChartViewModel
+*
+* @description
+* Stores chart related view data such as viewport size or axes containers
+*
+###
 class ChartViewModel
 
     constructor: (container) ->
@@ -80,13 +88,34 @@ class ChartViewModel
 
     getVisibleAreaDeltaRatio: -> @viewportOverlay.visibleWidth / @initial.viewportOverlay.visibleWidth
 
+###*
+* @ngdoc service
+* @name wh.timeline.chart.Chart
+*
+* @description
+* Chart object, at the moment it's just a wrapper for ChartDataModel
+###
 class Chart
     constructor: (@dataModel) ->
 
-# Just a mock class for a reference of what methods are necessary
+
+###*
+* @ngdoc object
+* @name wh.timeline.chart.ChartView
+*
+* @description
+* Abstract class for a reference of what methods are necessary
+###
 class ChartView
     render: ->
 
+###*
+* @ngdoc object
+* @name wh.timeline.chart.D3ChartView
+*
+* @description
+* Abstract ChartView implementation for D3 chart library
+###
 class D3ChartView extends ChartView
 
     constructor: (@chart) ->
@@ -105,16 +134,59 @@ class D3ChartView extends ChartView
             # We need at least one more tick, let's compute a moment that is
             # 1.2 * average interval length
             # in the future (in case of february or so)
-            # @TODO: bug, @data may be empty etc
             countTo = new Date()
             countTo.setTime(to.getTime()+1.2*(to.getTime()-from.getTime())/@data.length)
             ticksData = @xAxis.ticks()
             @ticksCache[cacheKey] = ticksData[0](from, countTo, 1)
         return @ticksCache[cacheKey]
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#xToDate
+    *
+    * @param {integer} x  X coordinate within chart pane
+    *
+    * @return {date} Date that is currently represented by X coordinate
+    ###
     xToDate:          (x)    -> @x.invert(x)
+
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @namewh.timeline.chart.D3ChartView#dateToX
+    *
+    * @param {Date} date  Date to convert
+    *
+    * @return {integer} X coordinate that is represented by date
+    ###
     dateToX:          (date) -> @tickValue(date)
+
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @namewh.timeline.chart.D3ChartView#tickValue
+    *
+    * @param {tick} tick
+    *
+    * @return {integer} Rounded X coordinate represented by `tick`
+    ###
     tickValue:        (tick) -> Math.ceil(@x(tick)-0.00001)
+
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#findSurroundingTicks
+    * 
+    * @description returns tick values surrounding given date. Some ticks may be
+    * skipped, e.g. instead of returning two closest midnights it is possible to
+    * return compute tick values, move `shift` steps, and then return the result.
+    *
+    * @param {Date} date      date to 
+    * @param {integer} shift  how many ticks to the right should be skipped?
+    *
+    * @return {array} Previous and next tick values
+    ###
     findSurroundingTicks: (date, shift=0) ->
         ticks = @allXTicks()
 
@@ -130,6 +202,15 @@ class D3ChartView extends ChartView
 
         return [ticks[i-1+shift], ticks[i+shift]]
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareData
+    * 
+    * @description prepares data for internal processing - removes any data bins
+    * that wouldn't be rendered anyway - this way huge amounts of data will never
+    * cause a bottleneck when rendering
+    ###
     prepareData: ->
         @data = []
         renderSinceUnix = @renderOptions.renderSince / 1000
@@ -141,6 +222,14 @@ class D3ChartView extends ChartView
                 value: bin.value
             }
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#createXAxis
+    * 
+    * @description creates X axis object, prepares range and domain,
+    * computes custom intervals
+    ###
     createXAxis: ->
         @x = d3.time.scale.utc()
         # @x.clamp(true) # breaks our wonderful xTicks function :(
@@ -179,41 +268,92 @@ class D3ChartView extends ChartView
             .ticks(subInterval, step)
             .tickFormat(d3.time.format.utc('%e %B %Y'))
 
-
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#createYAxis
+    * 
+    * @description creates Y axis object, prepares range and domain
+    ###
     createYAxis: ->
         @y = d3.scale.linear().range([@renderOptions.viewModel.viewportOverlay.height, 0])
         @y.domain [0, @renderOptions.yMax]
         @yAxis = d3.svg.axis().scale(@y).orient("left").ticks(2) #, "%")
 
-    processSkeleton: ->
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareChartPane
+    * 
+    * @description prepares/creates chart pane for further rendering
+    ###
+    prepareChartPane: ->
 
     setRenderOptions: (@renderOptions={}) ->
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareChartPane
+    *
+    * @param {object} renderOptions rendering options
+    * * viewModel    - rendered chart's viewModel
+    * * yMax         - rendered y axis height in pixels
+    * * renderWidth  - rendered x axis width in pixels
+    * * renderSince  - timestamp (milliseconds) of the point in time when the chart should start
+    * * renderTo     - timestamp (milliseconds) of the point in time when the chart should end
+    * * animDuration - how long animations should last (in milliseconds)
+    * * className    - for chart pane
+    *
+    * @description renders/updates the chart component (axes, chart data)
+    ###
     render: (renderOptions) ->
         @setRenderOptions(renderOptions)
         @prepareData()
         @createXAxis()
         @createYAxis()
-        @processSkeleton()
+        @prepareChartPane()
 
         @redraw()
         @$svg.finish().fadeIn(@renderOptions.animDuration)
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#redraw
+    * @description renders/updates chart data only (e.g. bars in case of histogram) -
+    * doesn't do anything with axes or anything else
+    ###
     redraw: ->
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareChartPane
+    *
+    * @param {object} renderOptions rendering options @see wh.timeline.chart.D3ChartView#prepareChartPane
+    * @description removes data from this chart, animates bars, hides this chart
+    ###
     unrender:  (renderOptions) ->
         @setRenderOptions(renderOptions)
         @data = []
         #@createXAxis()
         #@createYAxis()
-        @processSkeleton()
+        @prepareChartPane()
 
         @redraw()
         @$svg.finish().fadeOut(@renderOptions.animDuration)
 
+###*
+* @ngdoc object
+* @name wh.timeline.chart.D3HTMLChartView
+*
+* @description
+* Abstract D3ChartView implementation for HTML charts
+###
 class D3HTMLChartView extends D3ChartView
 
-    processSkeleton: ->
+    prepareChartPane: ->
         view = @
 
         unless @svg
@@ -227,16 +367,14 @@ class D3HTMLChartView extends D3ChartView
 
         @$svg.attr("class", "svg " + @renderOptions.className)
 
-        # Y-axis label
-        ###
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("Frequency")
-        ###
 
+###*
+* @ngdoc service
+* @name wh.timeline.chart.view.Histogram
+*
+* @description
+* Histogram chart view implementation
+###
 class HistogramView extends D3HTMLChartView
 
     redraw: ->
@@ -306,6 +444,13 @@ class HistogramView extends D3HTMLChartView
         ###
 
 
+###*
+* @ngdoc object
+* @name wh.timeline.chart.ChartManager
+*
+* @description
+* Abstract ChartManager implementation
+###
 class ChartManager
 
     constructor: ->
@@ -318,11 +463,22 @@ class ChartManager
             animDuration: 750
         }
 
-    manageChart: (chart, viewType) ->
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#manageChart
+    *
+    * @param {Chart} chart          Chart to manage
+    * @param {ChartView} viewClass  ChartView class object that should be used to rendered this chart
+    *
+    * @description
+    * Adds chart to pool of charts managed by this manager
+    ###
+    manageChart: (chart, viewClass) ->
         perspective = chart.dataModel.perspective
         @pool[perspective] = {
             chart: chart,
-            view: new viewType(chart),
+            view: new viewClass(chart),
             rendered: false
         }
 
@@ -330,9 +486,35 @@ class ChartManager
     getChart:    (perspective) -> @pool[perspective]
     removeChart: (perspective) -> delete @pool[perspective]
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#xToDate
+    *
+    * @param {integer} x  X coordinate within chart pane
+    *
+    * @return {date} Date that is currently represented by X coordinate
+    ###
     xToDate: (x) ->
+
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#dateToX
+    *
+    * @param {Date} date  Date to convert
+    *
+    * @return {integer} X coordinate that is represented by date
+    ###
     dateToX: (date) ->
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#getActiveCharts
+    *
+    * @return {array} array of active charts, first one is the main one
+    ###
     getActiveCharts: ->
         active = []
         for perspective in @activePerspectives
@@ -341,12 +523,29 @@ class ChartManager
 
     getMainActiveChart: -> @getActiveCharts().shift()
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#setActiveCharts
+    *
+    * @param {array} perspectives Time perspective names
+    *
+    * @description Tells this ChartManager about time perspectives that are supposed to be active
+    ###
     setActiveCharts: (perspectives) ->
         unless Object::toString.call(perspectives) == '[object Array]'
             perspectives = [perspectives]
 
         @activePerspectives = perspectives
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#computeRenderOptions
+    *
+    * @param {array} charts Charts to compute options for
+    * @return computed rendered options
+    ###
     computeRenderOptions: (charts) ->
         options = $.extend({}, @defaultRenderOptions)
 
@@ -370,13 +569,38 @@ class ChartManager
         
         return options
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#updateVisibleTimeInterval
+    *
+    * @param {TimeInterval} interval
+    * @description updates each managed chart with new visible time interval
+    ###
     updateVisibleTimeInterval: (interval) ->
         for perspective, elem of @pool
             elem.chart.dataModel.updateVisibleTimeInterval(interval)
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#suppressRendering
+    *
+    * @param {boolean} should
+    * @description Prevents this ChartManager from rendering
+    ###
     suppressRendering: (should=true) ->
         @renderingSuppressed = should
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#renderCurrentState
+    *
+    * @param {boolean} force Should perform rendering even though renderingSurpressed is set to true?
+    * @description Computes current set of rendering options, hides inactive charts and renders/updates
+    * active charts
+    ###
     renderCurrentState: (force=false) ->
         return if @renderingSuppressed and not force
 
@@ -394,12 +618,25 @@ class ChartManager
 
         @doRenderCurrentState(activeCharts.reverse(), renderOptions)
 
-
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#doRenderCurrentState
+    *
+    * @description Internal method for the sake of overriding by specific implementations
+    ###
     doRenderCurrentState: (activeCharts, renderOptions) ->
         for elem in activeCharts
             elem.view.render(renderOptions)
             elem.rendered = true
 
+###*
+* @ngdoc service
+* @name wh.timeline.chart.D3ChartManager
+*
+* @description
+* D3.js-based ChartManager implementation
+###
 class D3ChartManager extends ChartManager
 
     constructor: (@viewModel) ->
@@ -410,11 +647,27 @@ class D3ChartManager extends ChartManager
     xToDate: (x)    -> @getMainActiveChart().view.xToDate(x)
     dateToX: (date) -> @getMainActiveChart().view.dateToX(date)
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartManager
+    * @name wh.timeline.chart.D3ChartManager#getContainer
+    *
+    * @return chart container (from current viewModel)
+    ###
     getContainer: -> @viewModel.container
 
     refreshPaneDimensions: ->
         @viewModel.refreshDimensions()
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartManager
+    * @name wh.timeline.chart.D3ChartManager#doRenderCurrentState
+    *
+    * @param {array} activeCharts    list of charts to render
+    * @param {object} renderOptions  list of options @see wh.timeline.chart.D3ChartView#prepareChartPane
+    * @description Renders/updates current state of this manager. Rendered ChartPane is 2.5 bigger than the Vieport (for smooth scrolling)
+    ###
     doRenderCurrentState: (activeCharts, renderOptions) ->
         mainIdx = activeCharts.length-1
         i = 0
@@ -425,21 +678,30 @@ class D3ChartManager extends ChartManager
             elem.rendered = true
             i++
 
-        # @TODO: Refactor out
-        #if not @viewModel.paneLeft
         @viewModel.paneLeft = -renderOptions.renderBefore
-        @viewModel.pane.css('left',   @viewModel.paneLeft) # @TXC comment this line
-        @viewModel.pane.css('width', -@viewModel.paneLeft*2.5) # @TXC comment this line
+        @viewModel.pane.css('left',   @viewModel.paneLeft)
+        @viewModel.pane.css('width', -@viewModel.paneLeft*2.5)
 
         @doRenderAxes(activeCharts, renderOptions)
 
+    ###*
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartManager
+    * @name wh.timeline.chart.D3ChartManager#doRenderAxes
+    *
+    * @param {array} activeCharts    list of charts to render
+    * @param {object} renderOptions  list of options @see wh.timeline.chart.D3ChartView#prepareChartPane
+    * @description Renders/updates axes for current main chart (there is only one "global" X axis and
+    * one "global" Y axis - just to be sure that nice transition is possible even when active chart is
+    * changed)
+    ###
     doRenderAxes: (activeCharts, renderOptions) ->
         mainChart = @getMainActiveChart()
         view = mainChart.view
         chart = mainChart.chart
         d3cm = @
 
-        # y-axis-pane
+        # Axes panes
         unless @xAxisSvg
             @xAxisSvg = d3.select(@viewModel.xAxisPane[0])
                 .append("svg")
@@ -461,6 +723,8 @@ class D3ChartManager extends ChartManager
             @yAxisElem = @yAxisSvg.append("g")
                 .attr("class", "y axis")
                 .attr("transform", "translate(25, 0)")
+
+        # Axes elements
 
         @yAxisElem
             .transition()

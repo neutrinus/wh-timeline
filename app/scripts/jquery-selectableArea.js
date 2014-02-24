@@ -181,4 +181,6 @@
 
 }).call(this);
 
-//# sourceMappingURL=../../app/scripts/jquery-selectableArea.js.map
+/*
+//@ sourceMappingURL=jquery-selectableArea.js.map
+*/

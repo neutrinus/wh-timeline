@@ -1,7 +1,11 @@
+###*
+  * @ngdoc service wh.timeline.utils.TimeInterval
+  * @param {integer} __start start timestamp in milliseconds
+  * @param {integer} __end   end timestamp in milliseconds
+  * @param {bool} isUnix     if true, then above arguments should be specified as unix timestamps
+  * @description Immutable time interval
 ###
-    Immutable
-###
-class window.TimeInterval
+class TimeInterval
     __start: null
     __end:   null
 
@@ -9,7 +13,6 @@ class window.TimeInterval
         if isUnix
             @__start *= 1000
             @__end *= 1000
-
 
     milliseconds: -> @__end - @__start
     seconds:      -> @endUnix - @startUnix

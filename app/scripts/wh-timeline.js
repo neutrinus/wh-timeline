@@ -20,36 +20,252 @@
     return hash;
   };
 
-  angular.module('wh.timeline', ['ui.date', 'ui.bootstrap.timepicker']).service('wh.timeline.utils.configIsolator', function() {
-    return {
-      isolate: function(complete, properties) {
-        var p, viewValue, _i, _len;
-        viewValue = {};
-        for (_i = 0, _len = properties.length; _i < _len; _i++) {
-          p = properties[_i];
-          viewValue[p] = complete[p];
-        }
-        return viewValue;
-      },
-      merge: function(complete, isolated) {
-        var k, modelValue, v;
-        modelValue = {};
-        for (k in isolated) {
-          v = isolated[k];
-          if (k in complete) {
-            modelValue[k] = v;
-          }
-        }
-        for (k in complete) {
-          v = complete[k];
-          if (!(k in modelValue)) {
-            modelValue[k] = v;
-          }
-        }
-        return modelValue;
+  angular.module('wh.timeline', ['ui.date', 'ui.bootstrap.timepicker']);
+
+  /**
+  * @ngdoc service
+  * @name wh.timeline.utils.configIsolator
+  *
+  * @description
+  * Handy service for isolating and merging part of configuration from more complex objects
+  * Used by child directives of wh:timeline.
+  *
+  * @example
+  <example>
+      <file name="app.js">
+          angular.module('test')
+             .directive('isolated', [
+                  'wh.timeline.utils.configIsolator',
+                  function(configIsolator) {
+                      return {
+                          scope: { config: '=' },
+                          require: 'ngModel',
+                          link: function(scope, element, attrs, ngModel)
+                          {
+                              ngModel.$formatters.unshift(function(modelValue) {
+                                  return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
+                              });
+  
+                              ngModel.$parsers.push(function(viewValue) {
+                                  return configIsolator.merge(scope.ngModel, viewValue)
+                              });
+                          }
+                      }
+                  }
+              ])
+          ;
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').service('wh.timeline.utils.configIsolator', function() {
+    var def;
+    def = {};
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.utils.configIsolator
+    * @name     wh.timeline.utils.configIsolator#isolate
+    * @param {object}  Complete Full configuration to process
+    * @param {array}   Properties Object keys to extract
+    * @description     Extracts given properties from object
+    * @return {object} Extracted properties
+    * @example
+    <example></example>
+    */
+
+    def.isolate = function(complete, properties) {
+      var p, viewValue, _i, _len;
+      viewValue = {};
+      for (_i = 0, _len = properties.length; _i < _len; _i++) {
+        p = properties[_i];
+        viewValue[p] = complete[p];
       }
+      return viewValue;
     };
-  }).directive('whTimeline', [
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.utils.configIsolator
+    * @name     wh.timeline.utils.configIsolator#merge
+    * @param {object}  complete Full configuration
+    * @param {array}   isolated Processed isolated object
+    * @description     Merges processed properties back to the object
+    * @return {object} Merged properties
+    * @example
+    <example></example>
+    */
+
+    def.merge = function(complete, isolated) {
+      var k, modelValue, v;
+      modelValue = {};
+      for (k in isolated) {
+        v = isolated[k];
+        if (k in complete) {
+          modelValue[k] = v;
+        }
+      }
+      for (k in complete) {
+        v = complete[k];
+        if (!(k in modelValue)) {
+          modelValue[k] = v;
+        }
+      }
+      return modelValue;
+    };
+    return def;
+  });
+
+  /**
+  * @ngdoc directive
+  * @name wh:timeline
+  * @requires wh.timeline.chart.Chart wh.timeline.chart.ChartDataModel wh.timeline.chart.ChartViewModel wh.timeline.chart.D3ChartManager wh.timeline.chart.view.Histogram wh.timeline.utils.TimeInterval wh.timeline.utils.configIsolator $timeout $interval $q $window $templateCache
+  * @param {databinding} ngModel configuration object used by this directive and child directives, See example below
+  *
+  * @description
+  * Creates a timeline widget that allows selection of either time range, or point in time (depending on configuration)
+  *
+  * @example
+  <example>
+      <file name="app.js">
+          $scope.timelineConfig = {
+              is_period: true,               # Select either period of time or point in time
+  
+              selected_start: 1385856000,    # December 1, 2013, midnight
+              selected_end: 1388849426,      # January 4, 2013, 15:30:26
+  
+              visible_start: 1370044800,     # - 3600 # June 1, 2013, midnight
+              visible_end:   1388849426,     # January 4, 2013, 15:30:26 # 1388530800
+  
+              is_start_tracked: false,       # Initial state of selection start tracking (changing the date as time passes)
+              is_end_tracked: true,          # Initial state of selection end tracking (changing the date as time passes) - may not be false if is_start_tracked is true
+  
+              predefined_choices: [
+                  # December 1, 2013 -- January 1, 2014
+                  {
+                    start: 1385856000,    end: 1388534400,
+                    start_tracked: false, end_tracked: false,
+                    name: "Last full month"
+                  },
+  
+                  # December 5, 2013, 15:30:26 -- January 4, 2013, 15:30:26
+                  {
+                    start: 1386257426,   end: 1388849426,
+                    start_tracked: true, end_tracked: true,
+                    name: "Last 30 days"
+                  },
+  
+                  # January 1, 1970, 0:00 -- January 4, 2013, 15:30:26
+                  {
+                    start: 1199464226,    end: 1388849426,
+                    start_tracked: false, end_tracked: true,
+                    name: "Last 5 years"
+                  }
+              ],
+              data: [
+                  {
+                      name: "Yearly",            # name of time perspective, allowed names: Yearly, Monthly, Weekly, Daily, Hourly, Minutely
+                      bin_width: 60*60*24*365,   # about 365 days
+                      active: false,             # not visible
+                      epoch_raw: 0,              # when this is changed, raw data is re-rendered
+                      raw: [],                   # no data loaded yet
+                      epoch_state: 0,            # when this is changed, state data is re-rendered
+                      state: []                  # no data loaded yet
+                  },
+                  {
+                      name: "Daily",
+                      bin_width: 60*60*24,
+                      active: false,
+                      epoch_raw: 123,
+                      raw: [
+                          { start: 1377993600, end: 1377993600 + 60*60*24, value: 14 } # September 2013
+                      ],
+                      epoch_state: 442,
+                      state: [
+                      ]
+                  },
+                  {
+                      name: "Monthly",
+                      bin_width: 60*60*24*30,    # about 30 days
+                      active: true,
+                      epoch_raw: 314159,
+                      raw: [
+                          #{ start: 1391212800, end: 1393632000, value: 5 }, # February 2013
+                          #{ start: 1393632000, end: 1396310400, value: 10 }, # March 2013
+  
+                          { start: 1377993600, end: 1380585600, value: 11 }, # September 2013
+                          { start: 1380585600, end: 1383271200, value: 13 }, # October 2013
+                          # note: missing November data.
+                          { start: 1385863200, end: 1388541600-7200, value: 14 }  # December 2013
+                          { start: 1388541600-7200, end: 1391541600, value: 15 }  # December 2013
+                      ],
+                      epoch_state: 924657,
+                      state: [
+                          # September 2013 - October 15, 2013
+                          { start: 1377993600, end: 1381795200, state: "loaded" },
+  
+                          # October 15, 2013 - October 22, 2013
+                          { start: 1381795200, end: 1382400000, state: "missing" },
+  
+                          # October 22, 2013 - December 1, 2013
+                          { start: 1382400000, end: 1385856000, state: "computing" },
+  
+                          # December 1, 2013 - January 1, 2014
+                          { start: 1385856000, end: 1388541600, state: "loaded" }
+                      ]
+                  },
+                  {
+                      name: "Weekly",
+                      bin_width: 60*60*24*7,     # about 7 days
+                      active: true,
+                      epoch_raw: 123,
+                      raw: [
+                          { start: 1377302400, end: 1377907200, value: 10.000000 },
+                          { start: 1377907200, end: 1378512000, value: 10.499167 },
+                          { start: 1378512000, end: 1379116800, value: 10.993347 },
+                          { start: 1379116800, end: 1379721600, value: 11.477601 },
+                          { start: 1379721600, end: 1380326400, value: 11.947092 },
+                          { start: 1380326400, end: 1380931200, value: 12.397128 },
+                          { start: 1380931200, end: 1381536000, value: 12.823212 },
+                          { start: 1381536000, end: 1382140800, value: 13.221088 },
+                          { start: 1382140800, end: 1382745600, value: 13.586780 },
+                          { start: 1382745600, end: 1383350400, value: 13.916635 },
+                          { start: 1383350400, end: 1383955200, value: 14.207355 },
+                          { start: 1383955200, end: 1384560000, value: 14.456037 },
+                          { start: 1384560000, end: 1385164800, value: 14.660195 },
+                          { start: 1385164800, end: 1385769600, value: 14.817791 },
+                          { start: 1385769600, end: 1386374400, value: 14.927249 },
+                          { start: 1386374400, end: 1386979200, value: 14.987475 },
+                          { start: 1386979200, end: 1387584000, value: 14.997868 },
+                          { start: 1387584000, end: 1388188800, value: 14.958324 },
+                          { start: 1388188800, end: 1388793600, value: 14.869238 },
+                          { start: 1388793600, end: 1389398400, value: 14.731500 },
+                          { start: 1389398400, end: 1390003200, value: 14.546487 },
+                          { start: 1390003200, end: 1390608000, value: 14.316047 },
+                          { start: 1390608000, end: 1391212800, value: 14.042482 },
+                          { start: 1391212800, end: 1391817600, value: 13.728526 },
+                          { start: 1391817600, end: 1392422400, value: 13.377316 },
+                          { start: 1392422400, end: 1393027200, value: 12.992361 },
+                          { start: 1393027200, end: 1393632000, value: 12.577507 },
+                          { start: 1393632000, end: 1394236800, value: 12.136899 },
+                          { start: 1394236800, end: 1394841600, value: 11.674941 },
+                          { start: 1394841600, end: 1395446400, value: 11.196247 }
+                      ],
+                      epoch_state: 442,
+                      state: [
+                          { start: 1377302400, end: 1395446400, state: "loaded" }
+                      ]
+                  }
+              ]
+          }
+      </file>
+      <file name="index.html">
+          <wh-timeline ng-model="timelineConfig"></wh-timeline>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('whTimeline', [
     'wh.timeline.chart.Chart', 'wh.timeline.chart.ChartDataModel', 'wh.timeline.chart.ChartViewModel', 'wh.timeline.chart.D3ChartManager', 'wh.timeline.chart.view.Histogram', 'wh.timeline.utils.TimeInterval', 'wh.timeline.utils.configIsolator', '$timeout', '$interval', '$q', '$window', '$templateCache', (function(Chart, ChartDataModel, ChartViewModel, D3ChartManager, HistogramView, TimeInterval, configIsolator, $timeout, $interval, $q, $window, $templateCache) {
       var chartManagerDeferred;
       chartManagerDeferred = $q.defer();
@@ -264,7 +480,31 @@
         }
       };
     })
-  ]).directive('whTimelinePerspectivePicker', [
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name wh:timeline-perspective-picker
+  * @requires $templateCache wh.timeline.utils.configIsolator
+  * @param {databinding} ngModel the same configuration object as wh:timeline which is used for rendering and is also updated whenever user is interacting with the widget
+  *
+  * @description
+  * Perspective switcher for the timeline widget, rendered as +/- buttons, provides event handler for mouse scroll.
+  * If perspective level can't be zoomed more (because selected time period is too long), then
+  * code from on-zoom-rejected attribute is called.
+  *
+  * @example
+  <example>
+      <file name="index.html">
+          <wh:timeline-perspective-picker
+              ng-model="ngModel"
+              on-zoom-rejected="zoomRejected=true"></wh:timeline-perspective-picker>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('whTimelinePerspectivePicker', [
     '$templateCache', 'wh.timeline.utils.configIsolator', function($templateCache, configIsolator) {
       return {
         restrict: 'E',
@@ -395,7 +635,40 @@
         }
       };
     }
-  ]).directive('whTimelineSelectionConfig', [
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name wh:timeline-selection-config
+  * @requires $timeout $templateCache wh.timeline.utils.configIsolator'
+  * @param {databinding} ngModel the same configuration object as wh:timeline which is used for rendering and is also updated whenever user is interacting with the widget
+  
+  * @description
+  * Selection configuration widget, allows selection manipulation with following widgets:
+  * * calendar
+  * * timepicker (3 inputs with arrows and scrolling)
+  * * datepicker (3 inputs)
+  *
+  * This directive may influence following ngModel:
+  *
+  * * selected_start    - basic feature, there is GUI for that
+  * * selected_end      - basic feature, there is GUI for that
+  * * visible_start     - if chosen selection either cannot fit within current visible bounds, or is so small it would be barely visible
+  * * visible_end       - same as above
+  * * is_start_tracked  - basic feature, there is GUI for that
+  * * is_end_tracked    - basic feature, there is GUI for that
+  * * data[].active     - visible time perspective may be modified if selected time span is too long/short
+  *
+  * @example
+  <example>
+      <file name="index.html">
+          <wh:timeline-selection-config ng-model="ngModel"></wh:timeline-selection-config>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('whTimelineSelectionConfig', [
     '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', (function($timeout, $templateCache, configIsolator) {
       return {
         restrict: 'E',
@@ -512,7 +785,38 @@
         }
       };
     })
-  ]).directive('whTimelineSelections', [
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name wh:timeline-selections
+  * @requires $timeout $interval $templateCache wh.timeline.selection.plugin.ChartPanePlugin wh.timeline.selection.plugin.StickySelectionPlugin wh.timeline.selection.SelectionAreaManager wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver wh.timeline.selection.SelectionArea wh.timeline.utils.configIsolator
+  * @scope
+  * @restrict E
+  * @param {databinding} ngModel which is used for rendering and is also updated whenever user is interacting with the widget
+  * @param {databinding} adjustingSelection which is set to true whenever user is interacting with the widget
+  *
+  * @description
+  * Selection rendering / updating widget. Selection can be composed / updated via drag & drop
+  *
+  * It requires the same configuration object as wh:timeline directive and it may influence following values:
+  * * selected_start    - basic feature
+  * * selected_end      - basic feature
+  * * visible_start     - if selection is moved close to the left  boundary
+  * * visible_end       - if selection is moved close to the right boundary
+  *
+  * @example
+  <example>
+      <file name="index.html">
+          <wh:timeline-selections
+              ng-model="ngModel"
+              adjusting-selection="adjustingSelection"></wh:timeline-selections>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('whTimelineSelections', [
     '$timeout', '$interval', '$templateCache', 'wh.timeline.selection.plugin.ChartPanePlugin', 'wh.timeline.selection.plugin.StickySelectionPlugin', 'wh.timeline.selection.SelectionAreaManager', 'wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy', 'wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver', 'wh.timeline.selection.SelectionArea', 'wh.timeline.utils.configIsolator', (function($timeout, $interval, $templateCache, ChartPanePlugin, StickySelectionPlugin, SelectionAreaManager, SingleSelectionAreaManagementStrategy, SingleSelectionAreaNodeResolver, SelectionArea, configIsolator) {
       return {
         restrict: 'E',
@@ -673,7 +977,29 @@
         }
       };
     })
-  ]).directive('ngPressToggle', [
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name wh:press-toggle
+  * @requires $parse
+  * @restrict A
+  * @param {databinding} ngPressToggle value that is set to true when toggle is active and to false when it is not
+  *
+  * @description
+  * Tracks toggle state of an element. When mouse button pressed on given element, toggle state is 1. When mouse
+  * button is released (on this or any other element), toggle state is set to 0
+  *
+  * @example
+  <example>
+      <file name="index.html">
+          <input wh-press-toggle="isToggled" />
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('whPressToggle', [
     '$parse', function($parse) {
       var mouseupCallbackNo, mouseupCallbacks;
       mouseupCallbackNo = 0;
@@ -687,7 +1013,6 @@
         return null;
       });
       return {
-        priority: 100,
         link: function(scope, element, attr) {
           var isPressedIn, outCallbackNo, setter;
           isPressedIn = false;
@@ -714,10 +1039,29 @@
         }
       };
     }
-  ]).directive('whTimelineDebug', [
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name wh:timeline-debug
+  * @restrict E
+  * @param {databinding} config whTimeline configuration object
+  *
+  * @description
+  * Displays some debugging information related to the current state of whTimeline directive
+  *
+  * @example
+  <example>
+      <file name="index.html">
+          <wh:timeline-debug config="timelineConfig"></wh:timeline-debug>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('whTimelineDebug', [
     (function() {
       return {
-        priority: 91,
         restrict: 'E',
         replace: true,
         scope: {
@@ -726,7 +1070,31 @@
         templateUrl: 'templates/wh-timeline-debug.html'
       };
     })
-  ]).directive('timepickerUnix', [
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name wh:timepicker-unix
+  * @restrict E
+  * @scope
+  * @param {databinding} ngModel Date object
+  *
+  * @description
+  * Slim wrapper around the timepicker directive to ensure UTC timezone
+  *
+  * @example
+  <example>
+      <file name="app.js">
+          $scope.date = new Date();
+      </file>
+      <file name="index.html">
+          <timepicker ng-model="date"></timepicker>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('timepickerUnix', [
     (function() {
       return {
         restrict: 'E',
@@ -747,58 +1115,30 @@
         }
       };
     })
-  ]).directive('ngPressIn', function($parse) {
-    var mouseupCallbackNo, mouseupCallbacks;
-    mouseupCallbackNo = 0;
-    mouseupCallbacks = {};
-    $(document).on('mouseup', function() {
-      var callback, k;
-      for (k in mouseupCallbacks) {
-        callback = mouseupCallbacks[k];
-        callback();
-      }
-      return null;
-    });
-    return {
-      priority: 100,
-      link: function(scope, element, attr) {
-        var isPressedIn, onPressEnd, onPressStart, outCallbackNo;
-        isPressedIn = false;
-        outCallbackNo = false;
-        if (attr['ngPressIn']) {
-          onPressStart = $parse(attr['ngPressIn']);
-          element.bind('mousedown', function(event) {
-            isPressedIn = true;
-            return scope.$apply(function() {
-              return onPressStart(scope, {
-                $event: event
-              });
-            });
-          });
-        }
-        if (attr['ngPressOut']) {
-          outCallbackNo = ++mouseupCallbackNo;
-          onPressEnd = $parse(attr['ngPressOut']);
-          mouseupCallbacks[outCallbackNo] = function() {
-            if (!isPressedIn) {
-              return;
-            }
-            isPressedIn = false;
-            return scope.$apply(function() {
-              return onPressEnd(scope, {
-                $event: event
-              });
-            });
-          };
-        }
-        return scope.$on('$destroy', function() {
-          if (outCallbackNo !== false) {
-            return delete mouseupCallbacks[outCallbackNo];
-          }
-        });
-      }
-    };
-  }).directive('uiUtcUnixDate', function() {
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name ui:utc-unix-date
+  * @param {databinding} ngModel Date object
+  *
+  * @description
+  * Slim wrapper ensuring UTC timezone processing. May be used with any directive working with the date object
+  * which assumes local timezone should be used.
+  *
+  * @example
+  <example>
+      <file name="app.js">
+          $scope.date = new Date();
+      </file>
+      <file name="index.html">
+          <div ui-date ui-utc-unix-date ng-model="date"></div>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('uiUtcUnixDate', function() {
     return {
       require: 'ngModel',
       link: function(scope, element, attrs, modelCtrl) {
@@ -820,7 +1160,30 @@
         });
       }
     };
-  }).directive('uiUnixDate', function() {
+  });
+
+  /**
+  * @ngdoc directive
+  * @name ui:utc-unix-date
+  * @param {databinding} ngModel Unix timestamp
+  *
+  * @description
+  * Slim wrapper that allows passing unix timestamp to any directive which
+  * expects Date object
+  *
+  * @example
+  <example>
+      <file name="app.js">
+          $scope.timestamp = 1199464226;
+      </file>
+      <file name="index.html">
+          <div ui-date ui-unix-date ng-model="timestamp"></div>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('uiUnixDate', function() {
     return {
       require: 'ngModel',
       link: function(scope, element, attrs, modelCtrl) {
@@ -838,7 +1201,32 @@
         });
       }
     };
-  }).directive('datepickerInputs', [
+  });
+
+  /**
+  * @ngdoc directive
+  * @name datepicker-inputs
+  * @restrict: E
+  * @scope
+  * @require $templateCache $log
+  * @param {databinding} ngModel Date object
+  *
+  * @description
+  * Widget that allows easy modification of year/month/day parts of any date object
+  *
+  * @example
+  <example>
+      <file name="app.js">
+          $scope.date = new Date();
+      </file>
+      <file name="index.html">
+          <datepicker-inputs ng-model="date"></datepicker-inputs>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('datepickerInputs', [
     '$templateCache', '$log', function($templateCache, $log) {
       return {
         restrict: 'E',
@@ -901,7 +1289,29 @@
         }
       };
     }
-  ]).directive('ngBlink', function() {
+  ]);
+
+  /**
+  * @ngdoc directive
+  * @name ng:blink
+  * @restrict: A
+  * @scope
+  * @param {databinding} ngBlink Boolean indicator of current visibility state
+  *
+  * @description
+  * Shows element whenever ngBlink binding is set to true and hides it 3500 ms later
+  *
+  * @example
+  <example>
+      <file name="index.html">
+          <button ng-click="showWarning=true">Show warning</button>
+          <span ng-blink="showWarning">Warning it is</span>
+      </file>
+  </example>
+  */
+
+
+  angular.module('wh.timeline').directive('ngBlink', function() {
     return {
       restrict: 'A',
       scope: {
@@ -917,22 +1327,10 @@
         });
       }
     };
-  }).directive('ngScroll', [
-    '$parse', function($parse) {
-      return function(scope, element, attr) {
-        var fn;
-        fn = $parse(attr.ngScroll);
-        return element.bind('mousewheel', function(event) {
-          return scope.$apply(function() {
-            return fn(scope, {
-              $event: event
-            });
-          });
-        });
-      };
-    }
-  ]);
+  });
 
 }).call(this);
 
-//# sourceMappingURL=../../app/scripts/wh-timeline.js.map
+/*
+//@ sourceMappingURL=wh-timeline.js.map
+*/
