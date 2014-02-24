@@ -31,7 +31,7 @@ class SelectionArea
 * @ngdoc object
 * @name wh.timeline.selection.SelectionAreaMover
 *
-* @description Internal class that performs calculations related to moving a selection
+* @description Internal class that performs calculations related to moving a selection area
 ###
 class SelectionAreaMover
 
@@ -107,7 +107,7 @@ class SelectionAreaMover
     *
     * @param {object} bounds  current selection bounds
     * @param {integer} deltaX current mouse movement
-    * @description handles
+    * @description Computes selection overflow in the "move" phase
     ###
     handleOverflowMove:  (bounds, deltaX) ->
         # If selection sticked to the left and mouse is either (inside the selection AND moving to the left) or outside of the pane
@@ -121,10 +121,26 @@ class SelectionAreaMover
         # Otherwise there is no overflow
         else @area.overflow = 0
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#handleOverflowCompose
+    *
+    * @param {integer} overflow current overflow
+    * @description Computes selection overflow in the "compose" phase
+    ###
     handleOverflowCompose: (overflow) ->
         # Simple stuff, just use whatever came from the selection plugin
         @area.overflow = overflow
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#compose
+    *
+    * @param {integer} deltaX current deltaX
+    * @description Handles calculations related to composing selection:
+    * * deciding which bound is currently moved (left or right)
+    * * moving that pane
+    ###
     compose: (deltaX) ->
         if (not @area.subState or @area.subState == 'moveRightBound') and    -deltaX >= @area.width and @area.left > 1 and not @area.overflow
             pDeltaX = -deltaX - @area.width
@@ -141,6 +157,13 @@ class SelectionAreaMover
         else
             @[@area.subState](deltaX)
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#move
+    *
+    * @param {integer} x
+    * @description moves the current selection by x
+    ###
     move: (x) ->
         if @area.overflow
             return
@@ -152,6 +175,13 @@ class SelectionAreaMover
 
         @area.left = @area.left + x
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#moveLeftBound
+    *
+    * @param {integer} x
+    * @description moves left bound by x (right bound stays at the same place)
+    ###
     moveLeftBound: (x) ->
         x = @calcPossibleLeftBoundMovement(x)
 
@@ -160,6 +190,14 @@ class SelectionAreaMover
 
         return x
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#calcPossibleLeftBoundMovement
+    *
+    * @param {integer} x
+    * @param {boolean} considerOverflow
+    * @description adjusts x to be valid left bound movement delta in case it isn't
+    ###
     calcPossibleLeftBoundMovement: (x, considerOverflow=true) ->
         if considerOverflow
             # console.log 'leftInfo', @area.overflow, @area.left+@area.width, @paneWidth
@@ -176,6 +214,13 @@ class SelectionAreaMover
 
         return x
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#moveRightBound
+    *
+    * @param {integer} x
+    * @description moves right bound by x (left bound stays at the same place)
+    ###
     moveRightBound: (x) ->
         x = @calcPossibleRightBoundMovement(x)
 
@@ -183,6 +228,14 @@ class SelectionAreaMover
 
         return x
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#calcPossibleRightBoundMovement
+    *
+    * @param {integer} x
+    * @param {boolean} considerOverflow
+    * @description adjusts x to be valid right bound movement delta in case it isn't
+    ###
     calcPossibleRightBoundMovement: (x, considerOverflow=true) ->
         if considerOverflow
             # console.log 'rightInfo', @area.overflow, @area.left
@@ -200,6 +253,12 @@ class SelectionAreaMover
         return x
 
 
+###*
+* @ngdoc object
+* @name wh.timeline.selection.SelectionPointMover
+*
+* @description Internal class that performs calculations related to moving a selection point
+###
 class SelectionPointMover extends SelectionAreaMover
 
     setup: (area, paneWidth) ->
@@ -227,10 +286,30 @@ class SelectionPointMover extends SelectionAreaMover
         if super(x)
             @__proto__.__proto__.moveLeftBound.call(@, x)
 
-# Just a mock class for a reference of what methods are necessary
+###*
+* @ngdoc object
+* @service wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver
+*
+* @description "Abstract" Node Resolver
+###
 class SelectionAreaNodeResolver
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#calcPossibleRightBoundMovement
+    *
+    * @param {event} areaSelectionEvent
+    * @description Computes appropriate SelectionArea to modify after areaSelectionEvent was intercepted
+    * It will be useful when two or more SelectionAreas are present and they are overlapping
+    * @return {SelectionArea}
+    ###
     resolve: (areaSelectionEvent) ->
 
+###*
+* @ngdoc object
+* @name wh.timeline.selection.SingleSelectionAreaNodeResolver
+*
+* @description Simple Node Resolver, always returns clicked selection
+###
 class SingleSelectionAreaNodeResolver
 
     constructor: (options={}) ->
@@ -241,10 +320,33 @@ class SingleSelectionAreaNodeResolver
     resolve: (event) ->
         return $(event.originalEvent.target).closest(@options.selectionElementSelector)
 
-# Just a mock class for a reference of what methods are necessary
+
+###*
+* @ngdoc object
+* @name wh.timeline.selection.SelectionAreaManagementStrategy
+*
+* @description "Abstract" management strategy just to expose some interface
+###
 class SelectionAreaManagementStrategy
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaManagementStrategy#resolveAnotherSelection
+    *
+    * @param {array} managedSelectionAreas
+    * @param {event} selectionDetails
+    *
+    * @description Computes SelectionAreaManagementDelta based on managedSelectionAreas and selectionDetails
+    * @return {SelectionAreaManagementDelta}
+    ###
     resolveAnotherSelection: (managedSelectionAreas, selectionDetails) ->
 
+###*
+* @ngdoc object
+* @service wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy
+*
+* @description selection management strategy suited to single selection.
+* It either creates a selection if there is none, or returns existing one.
+###
 class SingleSelectionAreaManagementStrategy extends SelectionAreaManagementStrategy
 
     constructor: (options={}) ->
@@ -268,23 +370,53 @@ class SingleSelectionAreaManagementStrategy extends SelectionAreaManagementStrat
 
         return new SelectionAreaManagementDelta(selectionArea, droppedSelectionAreas)
 
+###*
+* @ngdoc object
+* @name wh.timeline.selection.SelectionAreaManagementDelta
+*
+* @description Created by SelectionAreaManagementStrategy. It tells SelectionAreaManager
+* what selections should be dropped and what is the currently active one.
+###
 class SelectionAreaManagementDelta
     activeSelection: null
     droppedSelectionAreas: null
     constructor: (@activeSelection, @droppedSelectionAreas) ->
 
+###*
+* @ngdoc service
+* @name wh.timeline.selection.SelectionAreaManager
+*
+* @description Manages selections model and view. Updates seletions based on events
+* received from the browser.
+###
 class SelectionAreaManager
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaManager#constructor
+    *
+    * @param {jQuery} pane
+    * @param {object} options Options for this SelectionAreaManager, the defaults are:
+    * {
+    *    maxSelections: 1              # Maximum number of selections managed by this manager
+    *    strategy: null                # SelectionAreaNodeResolver
+    *    mover: null                   # SelectionAreaMover used by this manager
+    *    isPeriod: true                # Should this SelectionAreaManager manage periods? if false then it will manage points
+    *    afterSelectionStart:  $.noop  # Callback to call after selection-related action is started
+    *    afterSelectionChange: $.noop  # Callback to call after selection is modified via user interaction
+    *    afterSelectionFinish: $.noop  # Callback to call after selection-related action is finished
+    * }
+    ###
     constructor: (pane, options) ->
         @selections = []
-        @params = {              # parameters affecting the current operation
-            initialArea: null    # freezed initial state of SelectionArea
-            pane: {              # freezed initial params of pane
+        @params = {
+            initialArea: null
+            pane: {
                 width: null
             }
-            resize: {            # resizing-related info
-                left:  false     # is resize to the left?
-                right: false     # is resize to the right?
+            resize: {
+                left:  false
+                right: false
             }
         }
         @plugins = []
@@ -302,7 +434,6 @@ class SelectionAreaManager
         @pane = pane
         @options = $.extend(true, {
             maxSelections: 1
-            onChange: $.noop
             strategy: null
             mover: null
 
@@ -319,6 +450,7 @@ class SelectionAreaManager
 
         setup.call(@)
 
+    # @private
     createEvent = (props={}) ->
         $.extend({'manager': @}, props, {
             defaultPrevented: false,
@@ -328,6 +460,7 @@ class SelectionAreaManager
             stopPropagation: -> @propagationStopped = true
         })
 
+    # @private
     notifyListeners: (eventName, data={}) ->
         event = createEvent(data)
         for listener in @listeners[eventName]
@@ -335,17 +468,27 @@ class SelectionAreaManager
             break if event.propagationStopped
         return event
 
+    # @private
     forceNewInitialState: (left, width) ->
         @params.initialArea.left = left
         @params.initialArea.width = width
         pluginModel = @pane.selectableArea().model
         pluginModel.x = 0
 
+    # @not implemented
     stopInteraction: ->
         @activeSelection = null
         for plugin in @plugins
             plugin.stopInteraction()
 
+    ###*
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaManager#setup
+    *
+    * @description configures current SelectionAreaManager, attach DOM events and handlers,
+    * notify listeners, define a way of processing events, move the selections, and so on.
+    * This method is responsible for configuring all selection-related logic
+    ###
     setup = ->
         @pane.selectableArea()
 
@@ -435,6 +578,12 @@ class SelectionAreaManager
     addPlugin: (plugin) ->
         plugin.init(@)
 
+###*
+* @ngdoc service
+* @name wh.timeline.selection.plugin.StickySelectionPlugin
+*
+* @description Attaches sticky selection handlers
+###
 class StickySelectionPlugin
 
     constructor: (@chartManager, options={}) ->
@@ -514,6 +663,12 @@ class StickySelectionPlugin
 
         return if distance0 < distance1 then siblings[0] else siblings[1]
 
+###*
+* @ngdoc service
+* @name wh.timeline.selection.plugin.ChartPanePlugin
+*
+* @description Allows scrolling chart pane when there is an overflow
+###
 class ChartPanePlugin
 
     constructor: (@chartManager, options={}) ->
