@@ -30,7 +30,8 @@
     "grunt-angular-templates": "~0.5.1",
     "jshint-stylish": "~0.1.5",
     "grunt-contrib-less": "~0.9.0",
-    "grunt-docular": "~0.1.2"
+    "grunt-docular": "~0.1.2",
+    "grunt-karma": "~0.6.2"
   },
   "engines": {
     "node": ">=0.8.0"

@@ -1008,7 +1008,7 @@ angular.module('wh.timeline')
             link: (scope, element, attr) ->
                 isPressedIn = false
                 outCallbackNo = ++mouseupCallbackNo
-                setter = $parse(attr['ngPressToggle']).assign
+                setter = $parse(attr['whPressToggle']).assign
 
                 element.bind 'mousedown', (event) ->
                     isPressedIn = true

@@ -1017,7 +1017,7 @@
           var isPressedIn, outCallbackNo, setter;
           isPressedIn = false;
           outCallbackNo = ++mouseupCallbackNo;
-          setter = $parse(attr['ngPressToggle']).assign;
+          setter = $parse(attr['whPressToggle']).assign;
           element.bind('mousedown', function(event) {
             isPressedIn = true;
             return scope.$apply(function() {
