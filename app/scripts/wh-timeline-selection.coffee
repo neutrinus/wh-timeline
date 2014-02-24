@@ -676,7 +676,7 @@ class ChartPanePlugin
         @overflow = 0
 
         @options = $.extend(true, {
-            pane:           $('.chart-pane'), # @TODO
+            pane:           @chartManager.viewModel.pane,
             onUpdate:       $.noop()
         }, options)
 

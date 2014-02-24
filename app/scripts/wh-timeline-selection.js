@@ -1,3 +1,11 @@
+/**
+* @ngdoc service
+* @name wh.timeline.selection.SelectionArea
+*
+* @description POJO object holding pixel-wise information about the selection
+*/
+
+
 (function() {
   var ChartPanePlugin, SelectionArea, SelectionAreaManagementDelta, SelectionAreaManagementStrategy, SelectionAreaManager, SelectionAreaMover, SelectionAreaNodeResolver, SelectionPointMover, SingleSelectionAreaManagementStrategy, SingleSelectionAreaNodeResolver, StickySelectionPlugin, _ref,
     __hasProp = {}.hasOwnProperty,
@@ -45,6 +53,14 @@
 
   })();
 
+  /**
+  * @ngdoc object
+  * @name wh.timeline.selection.SelectionAreaMover
+  *
+  * @description Internal class that performs calculations related to moving a selection area
+  */
+
+
   SelectionAreaMover = (function() {
     function SelectionAreaMover() {
       this.area = null;
@@ -55,6 +71,19 @@
       this.area = area;
       this.paneWidth = paneWidth;
     };
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#handle
+    *
+    * @param {SelectionArea} area
+    * @param {integer} paneWidth
+    * @param {event} e event received from SelectableAreaPlugin
+    *
+    * @description Handles an event received from SelectableAreaPlugin, sets this mover's
+    * state, and moves the selection accordingly
+    */
+
 
     SelectionAreaMover.prototype.handle = function(area, paneWidth, e) {
       var correctedAtomicDelta, overflowBefore;
@@ -93,13 +122,39 @@
       return true;
     };
 
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#getLeftMargin
+    *
+    * @return {integer} distanve between left edge of the selection and pane's left edge
+    */
+
+
     SelectionAreaMover.prototype.getLeftMargin = function() {
       return this.area.left;
     };
 
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#getRightMargin
+    *
+    * @return {integer} distanve between right edge of the selection and pane's right edge
+    */
+
+
     SelectionAreaMover.prototype.getRightMargin = function() {
       return this.paneWidth - this.area.width - this.area.left;
     };
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#handleOverflowMove
+    *
+    * @param {object} bounds  current selection bounds
+    * @param {integer} deltaX current mouse movement
+    * @description Computes selection overflow in the "move" phase
+    */
+
 
     SelectionAreaMover.prototype.handleOverflowMove = function(bounds, deltaX) {
       if (this.area.left === 0 && !(deltaX > 0 && bounds.left > 0)) {
@@ -111,9 +166,29 @@
       }
     };
 
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#handleOverflowCompose
+    *
+    * @param {integer} overflow current overflow
+    * @description Computes selection overflow in the "compose" phase
+    */
+
+
     SelectionAreaMover.prototype.handleOverflowCompose = function(overflow) {
       return this.area.overflow = overflow;
     };
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#compose
+    *
+    * @param {integer} deltaX current deltaX
+    * @description Handles calculations related to composing selection:
+    * * deciding which bound is currently moved (left or right)
+    * * moving that pane
+    */
+
 
     SelectionAreaMover.prototype.compose = function(deltaX) {
       var pDeltaX;
@@ -132,6 +207,15 @@
       }
     };
 
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#move
+    *
+    * @param {integer} x
+    * @description moves the current selection by x
+    */
+
+
     SelectionAreaMover.prototype.move = function(x) {
       var maxX, minX;
       if (this.area.overflow) {
@@ -144,12 +228,31 @@
       return this.area.left = this.area.left + x;
     };
 
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#moveLeftBound
+    *
+    * @param {integer} x
+    * @description moves left bound by x (right bound stays at the same place)
+    */
+
+
     SelectionAreaMover.prototype.moveLeftBound = function(x) {
       x = this.calcPossibleLeftBoundMovement(x);
       this.area.left = this.area.left + x;
       this.area.width = this.area.width - x;
       return x;
     };
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#calcPossibleLeftBoundMovement
+    *
+    * @param {integer} x
+    * @param {boolean} considerOverflow
+    * @description adjusts x to be valid left bound movement delta in case it isn't
+    */
+
 
     SelectionAreaMover.prototype.calcPossibleLeftBoundMovement = function(x, considerOverflow) {
       var maxX, minX;
@@ -171,11 +274,30 @@
       return x;
     };
 
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#moveRightBound
+    *
+    * @param {integer} x
+    * @description moves right bound by x (left bound stays at the same place)
+    */
+
+
     SelectionAreaMover.prototype.moveRightBound = function(x) {
       x = this.calcPossibleRightBoundMovement(x);
       this.area.width = this.area.width + x;
       return x;
     };
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#calcPossibleRightBoundMovement
+    *
+    * @param {integer} x
+    * @param {boolean} considerOverflow
+    * @description adjusts x to be valid right bound movement delta in case it isn't
+    */
+
 
     SelectionAreaMover.prototype.calcPossibleRightBoundMovement = function(x, considerOverflow) {
       var maxX, minX;
@@ -200,6 +322,14 @@
     return SelectionAreaMover;
 
   })();
+
+  /**
+  * @ngdoc object
+  * @name wh.timeline.selection.SelectionPointMover
+  *
+  * @description Internal class that performs calculations related to moving a selection point
+  */
+
 
   SelectionPointMover = (function(_super) {
     __extends(SelectionPointMover, _super);
@@ -245,14 +375,41 @@
 
   })(SelectionAreaMover);
 
+  /**
+  * @ngdoc object
+  * @service wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver
+  *
+  * @description "Abstract" Node Resolver
+  */
+
+
   SelectionAreaNodeResolver = (function() {
     function SelectionAreaNodeResolver() {}
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaMover#calcPossibleRightBoundMovement
+    *
+    * @param {event} areaSelectionEvent
+    * @description Computes appropriate SelectionArea to modify after areaSelectionEvent was intercepted
+    * It will be useful when two or more SelectionAreas are present and they are overlapping
+    * @return {SelectionArea}
+    */
+
 
     SelectionAreaNodeResolver.prototype.resolve = function(areaSelectionEvent) {};
 
     return SelectionAreaNodeResolver;
 
   })();
+
+  /**
+  * @ngdoc object
+  * @name wh.timeline.selection.SingleSelectionAreaNodeResolver
+  *
+  * @description Simple Node Resolver, always returns clicked selection
+  */
+
 
   SingleSelectionAreaNodeResolver = (function() {
     function SingleSelectionAreaNodeResolver(options) {
@@ -272,14 +429,43 @@
 
   })();
 
+  /**
+  * @ngdoc object
+  * @name wh.timeline.selection.SelectionAreaManagementStrategy
+  *
+  * @description "Abstract" management strategy just to expose some interface
+  */
+
+
   SelectionAreaManagementStrategy = (function() {
     function SelectionAreaManagementStrategy() {}
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaManagementStrategy#resolveAnotherSelection
+    *
+    * @param {array} managedSelectionAreas
+    * @param {event} selectionDetails
+    *
+    * @description Computes SelectionAreaManagementDelta based on managedSelectionAreas and selectionDetails
+    * @return {SelectionAreaManagementDelta}
+    */
+
 
     SelectionAreaManagementStrategy.prototype.resolveAnotherSelection = function(managedSelectionAreas, selectionDetails) {};
 
     return SelectionAreaManagementStrategy;
 
   })();
+
+  /**
+  * @ngdoc object
+  * @service wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy
+  *
+  * @description selection management strategy suited to single selection.
+  * It either creates a selection if there is none, or returns existing one.
+  */
+
 
   SingleSelectionAreaManagementStrategy = (function(_super) {
     __extends(SingleSelectionAreaManagementStrategy, _super);
@@ -318,6 +504,15 @@
 
   })(SelectionAreaManagementStrategy);
 
+  /**
+  * @ngdoc object
+  * @name wh.timeline.selection.SelectionAreaManagementDelta
+  *
+  * @description Created by SelectionAreaManagementStrategy. It tells SelectionAreaManager
+  * what selections should be dropped and what is the currently active one.
+  */
+
+
   SelectionAreaManagementDelta = (function() {
     SelectionAreaManagementDelta.prototype.activeSelection = null;
 
@@ -332,7 +527,33 @@
 
   })();
 
+  /**
+  * @ngdoc service
+  * @name wh.timeline.selection.SelectionAreaManager
+  *
+  * @description Manages selections model and view. Updates seletions based on events
+  * received from the browser.
+  */
+
+
   SelectionAreaManager = (function() {
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaManager#constructor
+    *
+    * @param {jQuery} pane
+    * @param {object} options Options for this SelectionAreaManager, the defaults are:
+    * {
+    *    maxSelections: 1              # Maximum number of selections managed by this manager
+    *    strategy: null                # SelectionAreaNodeResolver
+    *    mover: null                   # SelectionAreaMover used by this manager
+    *    isPeriod: true                # Should this SelectionAreaManager manage periods? if false then it will manage points
+    *    afterSelectionStart:  $.noop  # Callback to call after selection-related action is started
+    *    afterSelectionChange: $.noop  # Callback to call after selection is modified via user interaction
+    *    afterSelectionFinish: $.noop  # Callback to call after selection-related action is finished
+    * }
+    */
+
     var createEvent, setup;
 
     function SelectionAreaManager(pane, options) {
@@ -360,7 +581,6 @@
       this.pane = pane;
       this.options = $.extend(true, {
         maxSelections: 1,
-        onChange: $.noop,
         strategy: null,
         mover: null,
         isPeriod: true,
@@ -428,6 +648,16 @@
       }
       return _results;
     };
+
+    /**
+    * @ngdoc method
+    * @name wh.timeline.selection.SelectionAreaManager#setup
+    *
+    * @description configures current SelectionAreaManager, attach DOM events and handlers,
+    * notify listeners, define a way of processing events, move the selections, and so on.
+    * This method is responsible for configuring all selection-related logic
+    */
+
 
     setup = function() {
       var changed,
@@ -518,6 +748,14 @@
     return SelectionAreaManager;
 
   })();
+
+  /**
+  * @ngdoc service
+  * @name wh.timeline.selection.plugin.StickySelectionPlugin
+  *
+  * @description Attaches sticky selection handlers
+  */
+
 
   StickySelectionPlugin = (function() {
     function StickySelectionPlugin(chartManager, options) {
@@ -613,6 +851,14 @@
 
   })();
 
+  /**
+  * @ngdoc service
+  * @name wh.timeline.selection.plugin.ChartPanePlugin
+  *
+  * @description Allows scrolling chart pane when there is an overflow
+  */
+
+
   ChartPanePlugin = (function() {
     function ChartPanePlugin(chartManager, options) {
       this.chartManager = chartManager;
@@ -622,7 +868,7 @@
       this.inProgress = false;
       this.overflow = 0;
       this.options = $.extend(true, {
-        pane: $('.chart-pane'),
+        pane: this.chartManager.viewModel.pane,
         onUpdate: $.noop()
       }, options);
     }

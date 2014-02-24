@@ -625,7 +625,7 @@
             ngModel.$setViewValue(ngModel.$viewValue);
             return whTimeline.setVisibleTimePerspectives(scope.visible);
           };
-          return element.closest('.wh-timeline').find('.chart-area').bind('mousewheel', function(e) {
+          return element.closest('.wh-timeline').find('.chart-data-overlay').bind('mousewheel', function(e) {
             e.preventDefault();
             scope["switch"](e.deltaY > 0);
             if (!scope.$$phase && !scope.$root.$$phase) {

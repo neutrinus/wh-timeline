@@ -807,7 +807,7 @@ angular.module('wh.timeline')
                         selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000))
 
                         if scope.ngModel.is_period
-                            selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000+220))) # @TODO figure out why 220?
+                            selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000+220)))
                         else selectionRight = selectionLeft
 
                         selectionWidth = selectionRight-selectionLeft

@@ -200,17 +200,66 @@
       return this.ticksCache[cacheKey];
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#xToDate
+    *
+    * @param {integer} x  X coordinate within chart pane
+    *
+    * @return {date} Date that is currently represented by X coordinate
+    */
+
+
     D3ChartView.prototype.xToDate = function(x) {
       return this.x.invert(x);
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @namewh.timeline.chart.D3ChartView#dateToX
+    *
+    * @param {Date} date  Date to convert
+    *
+    * @return {integer} X coordinate that is represented by date
+    */
+
 
     D3ChartView.prototype.dateToX = function(date) {
       return this.tickValue(date);
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @namewh.timeline.chart.D3ChartView#tickValue
+    *
+    * @param {tick} tick
+    *
+    * @return {integer} Rounded X coordinate represented by `tick`
+    */
+
+
     D3ChartView.prototype.tickValue = function(tick) {
       return Math.ceil(this.x(tick) - 0.00001);
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#findSurroundingTicks
+    * 
+    * @description returns tick values surrounding given date. Some ticks may be
+    * skipped, e.g. instead of returning two closest midnights it is possible to
+    * return compute tick values, move `shift` steps, and then return the result.
+    *
+    * @param {Date} date      date to 
+    * @param {integer} shift  how many ticks to the right should be skipped?
+    *
+    * @return {array} Previous and next tick values
+    */
+
 
     D3ChartView.prototype.findSurroundingTicks = function(date, shift) {
       var found, i, millis, tick, ticks, _i, _len;
@@ -235,6 +284,17 @@
       return [ticks[i - 1 + shift], ticks[i + shift]];
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareData
+    * 
+    * @description prepares data for internal processing - removes any data bins
+    * that wouldn't be rendered anyway - this way huge amounts of data will never
+    * cause a bottleneck when rendering
+    */
+
+
     D3ChartView.prototype.prepareData = function() {
       var bin, renderSinceUnix, renderToUnix, _i, _len, _ref, _results;
       this.data = [];
@@ -254,6 +314,16 @@
       }
       return _results;
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#createXAxis
+    * 
+    * @description creates X axis object, prepares range and domain,
+    * computes custom intervals
+    */
+
 
     D3ChartView.prototype.createXAxis = function() {
       var interval, step, subInterval, tickDensity;
@@ -298,34 +368,89 @@
       return this.xAxis = d3.svg.axis().scale(this.x).orient("bottom").ticks(subInterval, step).tickFormat(d3.time.format.utc('%e %B %Y'));
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#createYAxis
+    * 
+    * @description creates Y axis object, prepares range and domain
+    */
+
+
     D3ChartView.prototype.createYAxis = function() {
       this.y = d3.scale.linear().range([this.renderOptions.viewModel.viewportOverlay.height, 0]);
       this.y.domain([0, this.renderOptions.yMax]);
       return this.yAxis = d3.svg.axis().scale(this.y).orient("left").ticks(2);
     };
 
-    D3ChartView.prototype.processSkeleton = function() {};
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareChartPane
+    * 
+    * @description prepares/creates chart pane for further rendering
+    */
+
+
+    D3ChartView.prototype.prepareChartPane = function() {};
 
     D3ChartView.prototype.setRenderOptions = function(renderOptions) {
       this.renderOptions = renderOptions != null ? renderOptions : {};
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareChartPane
+    *
+    * @param {object} renderOptions rendering options
+    * * viewModel    - rendered chart's viewModel
+    * * yMax         - rendered y axis height in pixels
+    * * renderWidth  - rendered x axis width in pixels
+    * * renderSince  - timestamp (milliseconds) of the point in time when the chart should start
+    * * renderTo     - timestamp (milliseconds) of the point in time when the chart should end
+    * * animDuration - how long animations should last (in milliseconds)
+    * * className    - for chart pane
+    *
+    * @description renders/updates the chart component (axes, chart data)
+    */
+
 
     D3ChartView.prototype.render = function(renderOptions) {
       this.setRenderOptions(renderOptions);
       this.prepareData();
       this.createXAxis();
       this.createYAxis();
-      this.processSkeleton();
+      this.prepareChartPane();
       this.redraw();
       return this.$svg.finish().fadeIn(this.renderOptions.animDuration);
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#redraw
+    * @description renders/updates chart data only (e.g. bars in case of histogram) -
+    * doesn't do anything with axes or anything else
+    */
+
+
     D3ChartView.prototype.redraw = function() {};
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartView
+    * @name wh.timeline.chart.D3ChartView#prepareChartPane
+    *
+    * @param {object} renderOptions rendering options @see wh.timeline.chart.D3ChartView#prepareChartPane
+    * @description removes data from this chart, animates bars, hides this chart
+    */
+
 
     D3ChartView.prototype.unrender = function(renderOptions) {
       this.setRenderOptions(renderOptions);
       this.data = [];
-      this.processSkeleton();
+      this.prepareChartPane();
       this.redraw();
       return this.$svg.finish().fadeOut(this.renderOptions.animDuration);
     };
@@ -351,7 +476,7 @@
       return _ref;
     }
 
-    D3HTMLChartView.prototype.processSkeleton = function() {
+    D3HTMLChartView.prototype.prepareChartPane = function() {
       var view;
       view = this;
       if (!this.svg) {
@@ -359,15 +484,6 @@
         this.$svg = $(this.svg[0][0].parentNode);
       }
       return this.$svg.attr("class", "svg " + this.renderOptions.className);
-      /*
-      .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("dy", ".71em")
-      .style("text-anchor", "end")
-      .text("Frequency")
-      */
-
     };
 
     return D3HTMLChartView;
@@ -556,6 +672,16 @@
       return this.activePerspectives = perspectives;
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#computeRenderOptions
+    *
+    * @param {array} charts Charts to compute options for
+    * @return computed rendered options
+    */
+
+
     ChartManager.prototype.computeRenderOptions = function(charts) {
       var chunk, elem, milliseconds, options, visibleInterval, _i, _j, _len, _len1, _ref2;
       options = $.extend({}, this.defaultRenderOptions);
@@ -579,6 +705,16 @@
       return options;
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#updateVisibleTimeInterval
+    *
+    * @param {TimeInterval} interval
+    * @description updates each managed chart with new visible time interval
+    */
+
+
     ChartManager.prototype.updateVisibleTimeInterval = function(interval) {
       var elem, perspective, _ref2, _results;
       _ref2 = this.pool;
@@ -590,12 +726,33 @@
       return _results;
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#suppressRendering
+    *
+    * @param {boolean} should
+    * @description Prevents this ChartManager from rendering
+    */
+
+
     ChartManager.prototype.suppressRendering = function(should) {
       if (should == null) {
         should = true;
       }
       return this.renderingSuppressed = should;
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#renderCurrentState
+    *
+    * @param {boolean} force Should perform rendering even though renderingSurpressed is set to true?
+    * @description Computes current set of rendering options, hides inactive charts and renders/updates
+    * active charts
+    */
+
 
     ChartManager.prototype.renderCurrentState = function(force) {
       var activeCharts, elem, perspective, renderOptions, _ref2;
@@ -622,6 +779,15 @@
       }
       return this.doRenderCurrentState(activeCharts.reverse(), renderOptions);
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.ChartManager
+    * @name wh.timeline.chart.ChartManager#doRenderCurrentState
+    *
+    * @description Internal method for the sake of overriding by specific implementations
+    */
+
 
     ChartManager.prototype.doRenderCurrentState = function(activeCharts, renderOptions) {
       var elem, _i, _len, _results;
@@ -665,6 +831,15 @@
       return this.getMainActiveChart().view.dateToX(date);
     };
 
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartManager
+    * @name wh.timeline.chart.D3ChartManager#getContainer
+    *
+    * @return chart container (from current viewModel)
+    */
+
+
     D3ChartManager.prototype.getContainer = function() {
       return this.viewModel.container;
     };
@@ -672,6 +847,17 @@
     D3ChartManager.prototype.refreshPaneDimensions = function() {
       return this.viewModel.refreshDimensions();
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartManager
+    * @name wh.timeline.chart.D3ChartManager#doRenderCurrentState
+    *
+    * @param {array} activeCharts    list of charts to render
+    * @param {object} renderOptions  list of options @see wh.timeline.chart.D3ChartView#prepareChartPane
+    * @description Renders/updates current state of this manager. Rendered ChartPane is 2.5 bigger than the Vieport (for smooth scrolling)
+    */
+
 
     D3ChartManager.prototype.doRenderCurrentState = function(activeCharts, renderOptions) {
       var elem, i, mainIdx, _i, _len;
@@ -690,6 +876,19 @@
       this.viewModel.pane.css('width', -this.viewModel.paneLeft * 2.5);
       return this.doRenderAxes(activeCharts, renderOptions);
     };
+
+    /**
+    * @ngdoc method
+    * @methodOf wh.timeline.chart.D3ChartManager
+    * @name wh.timeline.chart.D3ChartManager#doRenderAxes
+    *
+    * @param {array} activeCharts    list of charts to render
+    * @param {object} renderOptions  list of options @see wh.timeline.chart.D3ChartView#prepareChartPane
+    * @description Renders/updates axes for current main chart (there is only one "global" X axis and
+    * one "global" Y axis - just to be sure that nice transition is possible even when active chart is
+    * changed)
+    */
+
 
     D3ChartManager.prototype.doRenderAxes = function(activeCharts, renderOptions) {
       var aAxisTick, chart, d3cm, mainChart, view;

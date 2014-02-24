@@ -409,7 +409,7 @@ class HistogramView extends D3HTMLChartView
             .style("height", 0)
 
         bar.attr("class", "bar rect update")
-            .style("left",   calcXFn)      # @TODO: add that to transition
+            .style("left",   calcXFn)
             .style("width",  calcWidthFn)
             .transition()
             .duration(@renderOptions.animDuration)

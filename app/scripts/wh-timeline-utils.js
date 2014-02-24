@@ -1,10 +1,16 @@
-/*
-    Immutable
+/**
+  * @ngdoc service wh.timeline.utils.TimeInterval
+  * @param {integer} __start start timestamp in milliseconds
+  * @param {integer} __end   end timestamp in milliseconds
+  * @param {bool} isUnix     if true, then above arguments should be specified as unix timestamps
+  * @description Immutable time interval
 */
 
 
 (function() {
-  window.TimeInterval = (function() {
+  var TimeInterval;
+
+  TimeInterval = (function() {
     TimeInterval.prototype.__start = null;
 
     TimeInterval.prototype.__end = null;
