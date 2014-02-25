@@ -3,14 +3,14 @@
     <table>
         <tr>
             <td>
-                <h5>Displayed time:</h5>
+                <h5>Displayed time (local):</h5>
                 {{ config.visible_end }}<br/>
 
                 {{ (config.visible_start*1000)|date:"dd-MM-yyyy HH:mm:ss" }} -
                 {{ (config.visible_end*1000)|date:"dd-MM-yyyy HH:mm:ss" }}
             </td>
             <td>
-                <h5>Selected time:</h5>
+                <h5>Selected time (local):</h5>
                 <b>From:</b>&nbsp;{{ (config.selected_start*1000)|date:"dd-MM-yyyy HH:mm:ss" }}<br/>
                 <b>To:</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ (config.selected_end*1000)|date:"dd-MM-yyyy HH:mm:ss" }}
             </td>
