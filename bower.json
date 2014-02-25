@@ -12,8 +12,9 @@
       "angular-ui-date": "~0.0.3",
       "jquery-mousewheel": "*",
       "underscore": "~1.5.2",
-      "jquery-ui-bootstrap": "~0.2.5",
-      "moment": "~2.5.1"
+      "jquery-ui-bootstrap": "~0.2.5"
   },
-  "devDependencies": {}
+  "devDependencies": {
+      "angular-mocks": "~1.2.13"
+  }
 }

@@ -28,8 +28,8 @@ class SelectionArea
     }
 
 ###*
-* @ngdoc object
-* @name wh.timeline.selection.SelectionAreaMover
+* @ngdoc service
+* @name wh.timeline.selection.mover.SelectionAreaMover
 *
 * @description Internal class that performs calculations related to moving a selection area
 ###
@@ -108,18 +108,21 @@ class SelectionAreaMover
     * @param {object} bounds  current selection bounds
     * @param {integer} deltaX current mouse movement
     * @description Computes selection overflow in the "move" phase
+    * @return {integer} new overflow value
     ###
     handleOverflowMove:  (bounds, deltaX) ->
-        # If selection sticked to the left and mouse is either (inside the selection AND moving to the left) or outside of the pane
+        # If selection sticked to the left and mouse is either (inside of the selection AND moving to the left) or outside of the pane
         if @area.left == 0 and not (deltaX > 0 and bounds.left > 0)
             @area.overflow = Math.min(0, @area.overflow + deltaX, bounds.left)
 
-        # If selection sticked to the right and mouse is either (inside the selection AND moving to the right) or outside of the pane
+        # If selection sticked to the right and mouse is either (inside of the selection AND moving to the right) or outside of the pane
         else if @area.right >= @paneWidth and not (deltaX < 0 and bounds.right < @paneWidth)
             @area.overflow = Math.max(0, @area.overflow + deltaX, bounds.right - @paneWidth)
 
         # Otherwise there is no overflow
         else @area.overflow = 0
+
+        return @area.overflow
 
     ###*
     * @ngdoc method
@@ -245,7 +248,7 @@ class SelectionAreaMover
                 return 0
 
         minX = @area.width * -1 + 1
-        maxX = @getRightMargin() + 1
+        maxX = @getRightMargin()
 
         x = Math.min(maxX, x)
         x = Math.max(minX, x)
@@ -254,8 +257,8 @@ class SelectionAreaMover
 
 
 ###*
-* @ngdoc object
-* @name wh.timeline.selection.SelectionPointMover
+* @ngdoc service
+* @name wh.timeline.selection.mover.SelectionPointMover
 *
 * @description Internal class that performs calculations related to moving a selection point
 ###
@@ -798,6 +801,9 @@ angular
     .factory('wh.timeline.selection.plugin.StickySelectionPlugin', -> StickySelectionPlugin)
     .factory('wh.timeline.selection.strategy.SingleSelectionAreaManagementStrategy', -> SingleSelectionAreaManagementStrategy)
     .factory('wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver', -> SingleSelectionAreaNodeResolver)
+
+    .factory('wh.timeline.selection.mover.SelectionAreaMover',  -> SelectionAreaMover)
+    .factory('wh.timeline.selection.mover.SelectionPointMover', -> SelectionPointMover)
 
     .factory('wh.timeline.selection.SelectionArea', -> SelectionArea)
     .factory('wh.timeline.selection.SelectionAreaManager', -> SelectionAreaManager)

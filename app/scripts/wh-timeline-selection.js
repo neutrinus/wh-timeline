@@ -54,8 +54,8 @@
   })();
 
   /**
-  * @ngdoc object
-  * @name wh.timeline.selection.SelectionAreaMover
+  * @ngdoc service
+  * @name wh.timeline.selection.mover.SelectionAreaMover
   *
   * @description Internal class that performs calculations related to moving a selection area
   */
@@ -153,17 +153,19 @@
     * @param {object} bounds  current selection bounds
     * @param {integer} deltaX current mouse movement
     * @description Computes selection overflow in the "move" phase
+    * @return {integer} new overflow value
     */
 
 
     SelectionAreaMover.prototype.handleOverflowMove = function(bounds, deltaX) {
       if (this.area.left === 0 && !(deltaX > 0 && bounds.left > 0)) {
-        return this.area.overflow = Math.min(0, this.area.overflow + deltaX, bounds.left);
+        this.area.overflow = Math.min(0, this.area.overflow + deltaX, bounds.left);
       } else if (this.area.right >= this.paneWidth && !(deltaX < 0 && bounds.right < this.paneWidth)) {
-        return this.area.overflow = Math.max(0, this.area.overflow + deltaX, bounds.right - this.paneWidth);
+        this.area.overflow = Math.max(0, this.area.overflow + deltaX, bounds.right - this.paneWidth);
       } else {
-        return this.area.overflow = 0;
+        this.area.overflow = 0;
       }
+      return this.area.overflow;
     };
 
     /**
@@ -313,7 +315,7 @@
         }
       }
       minX = this.area.width * -1 + 1;
-      maxX = this.getRightMargin() + 1;
+      maxX = this.getRightMargin();
       x = Math.min(maxX, x);
       x = Math.max(minX, x);
       return x;
@@ -324,8 +326,8 @@
   })();
 
   /**
-  * @ngdoc object
-  * @name wh.timeline.selection.SelectionPointMover
+  * @ngdoc service
+  * @name wh.timeline.selection.mover.SelectionPointMover
   *
   * @description Internal class that performs calculations related to moving a selection point
   */
@@ -1008,6 +1010,10 @@
     return SingleSelectionAreaManagementStrategy;
   }).factory('wh.timeline.selection.nodeResolver.SingleSelectionAreaNodeResolver', function() {
     return SingleSelectionAreaNodeResolver;
+  }).factory('wh.timeline.selection.mover.SelectionAreaMover', function() {
+    return SelectionAreaMover;
+  }).factory('wh.timeline.selection.mover.SelectionPointMover', function() {
+    return SelectionPointMover;
   }).factory('wh.timeline.selection.SelectionArea', function() {
     return SelectionArea;
   }).factory('wh.timeline.selection.SelectionAreaManager', function() {
