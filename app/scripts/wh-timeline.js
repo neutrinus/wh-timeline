@@ -1000,7 +1000,7 @@
                   ngModel.$viewValue.selected_end += deltaMs;
                 }
                 ngModel.$viewValue.selected_end = Math.max(ngModel.$viewValue.selected_start, ngModel.$viewValue.selected_end);
-                ngModel.$viewValue.selected_end = Math.min(ngModel.$viewValue.visible_end, ngModel.$viewValue.selected_end);
+                ngModel.$viewValue.visible_end = Math.max(ngModel.$viewValue.visible_end, ngModel.$viewValue.selected_end);
                 ngModel.$setViewValue($.extend({}, ngModel.$viewValue));
                 ngModel.$render();
                 scope.$apply();

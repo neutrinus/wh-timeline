@@ -991,7 +991,11 @@ angular.module('wh.timeline')
                                 )
 
                                 # Prevent end overtaking visible end
-                                ngModel.$viewValue.selected_end = Math.min(
+                                #ngModel.$viewValue.selected_end = Math.min(
+                                #    ngModel.$viewValue.visible_end,
+                                #    ngModel.$viewValue.selected_end
+                                #)
+                                ngModel.$viewValue.visible_end = Math.max(
                                     ngModel.$viewValue.visible_end,
                                     ngModel.$viewValue.selected_end
                                 )
