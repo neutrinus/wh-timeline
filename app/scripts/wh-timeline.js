@@ -573,7 +573,7 @@
           scope.available = null;
           scope.binWidths = null;
           scope["switch"] = function(how) {
-            var binWidthRatio, currentIdx, deltaIdx, deltaVisible, factor, newActive, newIdx, projectedEnd, projectedStart, selectedSeconds, visibleSeconds, _ref, _ref1;
+            var binWidthRatio, cm, currentIdx, deltaIdx, deltaVisible, factor, newActive, newIdx, projectedEnd, projectedEndX, projectedStart, projectedStartX, selectedEndX, selectedSeconds, selectedStartX, visibleSeconds;
             switch (how) {
               case '+':
               case 1:
@@ -608,7 +608,12 @@
             projectedEnd = projectedStart + visibleSeconds;
             projectedStart += deltaVisible;
             projectedEnd -= deltaVisible;
-            if (!(((projectedStart <= (_ref1 = ngModel.$viewValue.selected_start) && _ref1 <= (_ref = ngModel.$viewValue.selected_end)) && _ref <= projectedEnd))) {
+            cm = whTimeline.getChartManager();
+            projectedStartX = cm.dateToX(new Date(projectedStart * 1000));
+            projectedEndX = cm.dateToX(new Date(projectedEnd * 1000));
+            selectedStartX = cm.dateToX(new Date(ngModel.$viewValue.selected_start * 1000));
+            selectedEndX = cm.dateToX(new Date(ngModel.$viewValue.selected_end * 1000));
+            if (!(((projectedStartX <= selectedStartX && selectedStartX <= selectedEndX) && selectedEndX <= projectedEndX))) {
               scope.onZoomRejected();
               return;
             }

@@ -526,8 +526,15 @@ angular.module('wh.timeline')
                     projectedStart += deltaVisible
                     projectedEnd  -= deltaVisible
 
+                    cm = whTimeline.getChartManager()
+                    projectedStartX = cm.dateToX(new Date(projectedStart*1000))
+                    projectedEndX = cm.dateToX(new Date(projectedEnd*1000))
+
+                    selectedStartX = cm.dateToX(new Date(ngModel.$viewValue.selected_start*1000))
+                    selectedEndX = cm.dateToX(new Date(ngModel.$viewValue.selected_end*1000))
+
                     # Don't zoom if that would change the selected area
-                    unless projectedStart <= ngModel.$viewValue.selected_start <= ngModel.$viewValue.selected_end <= projectedEnd
+                    unless projectedStartX <= selectedStartX <= selectedEndX <= projectedEndX
                         scope.onZoomRejected()
                         return
 
