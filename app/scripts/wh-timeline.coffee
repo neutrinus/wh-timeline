@@ -666,7 +666,7 @@ angular.module('wh.timeline')
                             viewValue.visible_end   = Math.max(viewValue.selected_end,   viewValue.visible_start + visibleSeconds)
                         # }}}
 
-                        # Change the time perspective too much bins would be visible after adjusting the selection {{{
+                        # Change the time perspective if too much bins would be visible after adjusting the selection {{{
                         visibleSeconds = viewValue.visible_end - viewValue.visible_start
 
                         visibleArea = whTimeline.getChartManager().viewModel.viewportOverlay.width
@@ -724,6 +724,30 @@ angular.module('wh.timeline')
                             newPadding = selectedSeconds * 20 / 3
                             ngModel.$viewValue.visible_start = ngModel.$viewValue.selected_start - newPadding
                             ngModel.$viewValue.visible_end   = ngModel.$viewValue.selected_end   + newPadding
+
+                            # Change the time perspective if too much bins would be visible after adjusting the selection {{{
+                            visibleSeconds = ngModel.$viewValue.visible_end - ngModel.$viewValue.visible_start
+                            visibleArea = whTimeline.getChartManager().viewModel.viewportOverlay.width
+                            calcBinWidth = (binWidth) ->
+                                binWidthRatio = visibleSeconds / binWidth
+                                return visibleArea / binWidthRatio
+
+                            binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth)
+
+                            if binWidthPx > 100
+                                binPerspectiveData = whTimeline.getSortedPerspectiveDetails()
+                                for i in [0..binPerspectiveData.length - 1]
+                                    chunk = binPerspectiveData[i]
+                                    binWidthPx = calcBinWidth(chunk.bin_width)
+                                    if binWidthPx < 100
+                                        break
+
+                                whTimeline.setActiveTimePerspective chunk.name
+                                visible = whTimeline.getVisibleTimePerspectives()
+                                for chunk in ngModel.$modelValue.data
+                                    chunk.active = chunk.name in visible
+
+                            # }}}
 
                         ngModel.$setViewValue ngModel.$viewValue
 

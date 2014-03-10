@@ -767,7 +767,7 @@
           });
           scope.predefinedChoice = null;
           return scope.$watch('predefinedChoice', function(newChoice) {
-            var newPadding, selectedSeconds, tooMuchVisible, visibleSeconds;
+            var binPerspectiveData, binWidthPx, calcBinWidth, chunk, i, newPadding, selectedSeconds, tooMuchVisible, visible, visibleArea, visibleSeconds, _i, _j, _len, _ref, _ref1, _ref2;
             if (!newChoice) {
               return;
             }
@@ -783,6 +783,31 @@
               newPadding = selectedSeconds * 20 / 3;
               ngModel.$viewValue.visible_start = ngModel.$viewValue.selected_start - newPadding;
               ngModel.$viewValue.visible_end = ngModel.$viewValue.selected_end + newPadding;
+              visibleSeconds = ngModel.$viewValue.visible_end - ngModel.$viewValue.visible_start;
+              visibleArea = whTimeline.getChartManager().viewModel.viewportOverlay.width;
+              calcBinWidth = function(binWidth) {
+                var binWidthRatio;
+                binWidthRatio = visibleSeconds / binWidth;
+                return visibleArea / binWidthRatio;
+              };
+              binWidthPx = calcBinWidth(whTimeline.getChartManager().getMainActiveChart().chart.dataModel.binWidth);
+              if (binWidthPx > 100) {
+                binPerspectiveData = whTimeline.getSortedPerspectiveDetails();
+                for (i = _i = 0, _ref = binPerspectiveData.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
+                  chunk = binPerspectiveData[i];
+                  binWidthPx = calcBinWidth(chunk.bin_width);
+                  if (binWidthPx < 100) {
+                    break;
+                  }
+                }
+                whTimeline.setActiveTimePerspective(chunk.name);
+                visible = whTimeline.getVisibleTimePerspectives();
+                _ref1 = ngModel.$modelValue.data;
+                for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+                  chunk = _ref1[_j];
+                  chunk.active = (_ref2 = chunk.name, __indexOf.call(visible, _ref2) >= 0);
+                }
+              }
             }
             ngModel.$setViewValue(ngModel.$viewValue);
             return scope.predefinedChoice = null;
