@@ -877,7 +877,9 @@ angular.module('wh.timeline')
                     # -------------------------
 
                     # Helper function that converts selected dates and visible coordinates to appropriate timestamps
+                    hasScheduledUpdate = false
                     updateModel = ->
+                        hasScheduledUpdate = false
                         return unless scope.selectionManager.selections.length
 
                         newSelection = scope.selectionManager.selections[0]
@@ -926,6 +928,7 @@ angular.module('wh.timeline')
                         chartManager.viewModel.pane.css {
                             left: chartManager.viewModel.paneLeft
                         }
+                        hasScheduledUpdate = true
 
                         if options.forceUpdate
                             updateModel()
@@ -938,7 +941,7 @@ angular.module('wh.timeline')
 
                         scope.selectionManager = new SelectionAreaManager(selectionPane, {
                             #afterSelectionStart:  onUserInteraction
-                            #afterSelectionFinish: onUserInteraction
+                            #afterSelectionFinish: onUserInteraction.bind(null, {forceUpdate: true})
                             afterSelectionChange: onUserInteraction
                             strategy: new SingleSelectionAreaManagementStrategy({
                                 nodeResolver: new SingleSelectionAreaNodeResolver({
@@ -962,6 +965,7 @@ angular.module('wh.timeline')
 
                     # setInterval used because $interval calls $apply() each time regardless of the fourth param!!
                     setInterval((->
+                        return if hasScheduledUpdate
                         newTime = getUnix()
 
                         activeSelection = scope.selectionManager.selections[0]

@@ -858,7 +858,7 @@
         },
         template: $templateCache.get('templates/wh-timeline-selections.html'),
         link: function(scope, element, attrs, controllers) {
-          var chartManager, ngModel, oldSelection, onUserInteraction, prevTime, recalculateSelectionView, selectionElement, selectionPane, throttledUpdateModel, updateModel, whTimeline,
+          var chartManager, hasScheduledUpdate, ngModel, oldSelection, onUserInteraction, prevTime, recalculateSelectionView, selectionElement, selectionPane, throttledUpdateModel, updateModel, whTimeline,
             _this = this;
           ngModel = controllers[0], whTimeline = controllers[1];
           selectionPane = element;
@@ -914,8 +914,10 @@
               }).css('overflow', 'visible');
             });
           };
+          hasScheduledUpdate = false;
           updateModel = function() {
             var from, invertedEndDate, invertedStartDate, newSelection, to, viewModel;
+            hasScheduledUpdate = false;
             if (!scope.selectionManager.selections.length) {
               return;
             }
@@ -954,6 +956,7 @@
             chartManager.viewModel.pane.css({
               left: chartManager.viewModel.paneLeft
             });
+            hasScheduledUpdate = true;
             if (options.forceUpdate) {
               return updateModel();
             } else {
@@ -981,6 +984,9 @@
           prevTime = getUnix();
           return setInterval((function() {
             var activeSelection, deltaMs, isPoint, newTime;
+            if (hasScheduledUpdate) {
+              return;
+            }
             newTime = getUnix();
             activeSelection = scope.selectionManager.selections[0];
             deltaMs = Math.floor(newTime - prevTime);
