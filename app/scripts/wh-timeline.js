@@ -879,9 +879,9 @@
           });
           recalculateSelectionView = function(viewValue) {
             var selectionLeft, selectionRight, selectionWidth;
-            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000));
+            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000)) + 1;
             if (scope.ngModel.is_period) {
-              selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000 + 220));
+              selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000)) + 1;
             } else {
               selectionRight = selectionLeft;
             }
