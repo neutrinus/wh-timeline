@@ -380,7 +380,7 @@
   box-sizing: content-box;
 }
 .wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.inactive {
-  z-index: 100;
+  z-index: 70;
 }
 .wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.inactive .bar {
   background: #808080;
@@ -390,6 +390,9 @@
 }
 .wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.secondary .bar {
   background: brown;
+}
+.wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.main {
+  z-index: 71;
 }
 .wh-timeline .wh-timeline-widget .chart-component .chart-viewport .chart-pane .charts .svg.active.main .bar {
   background: #4682b4;

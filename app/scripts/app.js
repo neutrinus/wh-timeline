@@ -193,7 +193,13 @@
           bin_width: 60 * 60 * 24 * 365,
           active: false,
           epoch_raw: 0,
-          raw: [],
+          raw: [
+            {
+              start: 1377993600,
+              end: 1377993600 + 60 * 60 * 24 * 365,
+              value: 14
+            }
+          ],
           epoch_state: 0,
           state: []
         }, {

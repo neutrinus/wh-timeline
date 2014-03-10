@@ -149,7 +149,9 @@ window.TimelineController = ($scope) ->
                 bin_width: 60*60*24*365,   # about 365 days
                 active: false,             # not visible
                 epoch_raw: 0,
-                raw: [],  # no data loaded yet
+                raw: [
+                    { start: 1377993600, end: 1377993600 + 60*60*24*365, value: 14 } # 2013
+                ],
                 epoch_state: 0,
                 state: [] # no data loaded yet
             },
