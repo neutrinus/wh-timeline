@@ -594,8 +594,8 @@ angular.module('wh.timeline')
 ###
 angular.module('wh.timeline')
        .directive('whTimelineSelectionConfig', [
-        '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator',
-        (($timeout, $templateCache, configIsolator) ->
+        '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', 'dateConverted',
+        (($timeout, $templateCache, configIsolator, dateConverted) ->
             return {
                 restrict: 'E'
                 replace: true
@@ -624,6 +624,10 @@ angular.module('wh.timeline')
                     scope.$watch('[start, end]', ((timestamps, oldTimestamps) ->
                         return if timestamps == oldTimestamps
                         return if timestamps[0] == ngModel.$modelValue.selected_start and timestamps[1] == ngModel.$modelValue.selected_end
+
+                        if timestamps[0] >= timestamps[1]
+                            timestamps[0] = timestamps[1]
+
                         ngModel.$viewValue.selected_start = timestamps[0]
                         ngModel.$viewValue.selected_end   = timestamps[1]
                         ngModel.$setViewValue ngModel.$viewValue
@@ -755,6 +759,53 @@ angular.module('wh.timeline')
                         # }}}
                     )
                     # }}}
+
+
+
+                    # Change tracked property to false whenever
+                    # month or year is changed in the calendar view
+                    #
+                    # Can't use onChangeMonthYear event of uiDatepicker
+                    # because it is fired not only when user changes
+                    # the data, but also when the date changes because
+                    # model changed
+                    element
+                        .find('.calendar.from')
+                        .on(
+                            'mousedown',
+                            '.ui-datepicker-next, .ui-datepicker-prev',
+                            (e) ->
+                                if ngModel.$modelValue.is_start_tracked
+                                    ngModel.$modelValue.is_start_tracked = false
+                                    ngModel.$setViewValue ngModel.$modelValue
+                                    scope.$apply()
+                        )
+
+                    element
+                        .find('.calendar.to')
+                        .on(
+                            'mousedown',
+                            '.ui-datepicker-next, .ui-datepicker-prev',
+                            (e) ->
+                                if ngModel.$modelValue.is_end_tracked
+                                    ngModel.$modelValue.is_end_tracked = false
+                                    ngModel.$setViewValue ngModel.$modelValue
+                                    scope.$apply()
+                            )
+
+                    # Don't allow to choose "from" date which is before "to" date
+                    scope.startCalendarConfig = {
+                        beforeShowDay: (date) ->
+                            shouldShow = dateConverted.localToUtc(date) <= new Date(ngModel.$modelValue.selected_end*1000)
+                            return [shouldShow, ""]
+                    }
+
+                    # Don't allow to choose "to" date which is before "from" date
+                    scope.endCalendarConfig = {
+                        beforeShowDay: (date) ->
+                            shouldShow = dateConverted.localToUtc(date) >= new Date(ngModel.$modelValue.selected_start*1000)
+                            return [shouldShow, ""]
+                    }
             }
         )
     ])
@@ -1156,7 +1207,20 @@ angular.module('wh.timeline')
 </example>
 ###
 angular.module('wh.timeline')
-    .directive('uiUtcUnixDate', ->
+    .service('dateConverted', ->
+        localToUtc: (localDate) ->
+            date = new Date(Date.UTC(
+                localDate.getFullYear(),
+                localDate.getMonth(),
+                localDate.getDate(),
+                localDate.getHours(),
+                localDate.getMinutes(),
+                localDate.getSeconds(),
+                localDate.getMilliseconds()
+            ))
+    )
+
+    .directive('uiUtcUnixDate', ['dateConverted', (dateConverted) ->
         require: 'ngModel'
         link: (scope, element, attrs, modelCtrl) ->
 
@@ -1175,17 +1239,9 @@ angular.module('wh.timeline')
 
             modelCtrl.$parsers.push (localDate) ->
                 return unless localDate
-                date = new Date(Date.UTC(
-                    localDate.getFullYear(),
-                    localDate.getMonth(),
-                    localDate.getDate(),
-                    localDate.getHours(),
-                    localDate.getMinutes(),
-                    localDate.getSeconds(),
-                    localDate.getMilliseconds()
-                ))
+                date = dateConverted.localToUtc(localDate)
                 return parseInt((date.getTime()+'').slice(0,-3))
-    )
+    ])
 
 ###*
 * @ngdoc directive

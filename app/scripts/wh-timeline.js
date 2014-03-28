@@ -674,7 +674,7 @@
 
 
   angular.module('wh.timeline').directive('whTimelineSelectionConfig', [
-    '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', (function($timeout, $templateCache, configIsolator) {
+    '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', 'dateConverted', (function($timeout, $templateCache, configIsolator, dateConverted) {
       return {
         restrict: 'E',
         replace: true,
@@ -700,6 +700,9 @@
             }
             if (timestamps[0] === ngModel.$modelValue.selected_start && timestamps[1] === ngModel.$modelValue.selected_end) {
               return;
+            }
+            if (timestamps[0] >= timestamps[1]) {
+              timestamps[0] = timestamps[1];
             }
             ngModel.$viewValue.selected_start = timestamps[0];
             ngModel.$viewValue.selected_end = timestamps[1];
@@ -766,7 +769,7 @@
             return configIsolator.merge(scope.ngModel, viewValue);
           });
           scope.predefinedChoice = null;
-          return scope.$watch('predefinedChoice', function(newChoice) {
+          scope.$watch('predefinedChoice', function(newChoice) {
             var binPerspectiveData, binWidthPx, calcBinWidth, chunk, i, newPadding, selectedSeconds, tooMuchVisible, visible, visibleArea, visibleSeconds, _i, _j, _len, _ref, _ref1, _ref2;
             if (!newChoice) {
               return;
@@ -812,6 +815,34 @@
             ngModel.$setViewValue(ngModel.$viewValue);
             return scope.predefinedChoice = null;
           });
+          element.find('.calendar.from').on('mousedown', '.ui-datepicker-next, .ui-datepicker-prev', function(e) {
+            if (ngModel.$modelValue.is_start_tracked) {
+              ngModel.$modelValue.is_start_tracked = false;
+              ngModel.$setViewValue(ngModel.$modelValue);
+              return scope.$apply();
+            }
+          });
+          element.find('.calendar.to').on('mousedown', '.ui-datepicker-next, .ui-datepicker-prev', function(e) {
+            if (ngModel.$modelValue.is_end_tracked) {
+              ngModel.$modelValue.is_end_tracked = false;
+              ngModel.$setViewValue(ngModel.$modelValue);
+              return scope.$apply();
+            }
+          });
+          scope.startCalendarConfig = {
+            beforeShowDay: function(date) {
+              var shouldShow;
+              shouldShow = dateConverted.localToUtc(date) <= new Date(ngModel.$modelValue.selected_end * 1000);
+              return [shouldShow, ""];
+            }
+          };
+          return scope.endCalendarConfig = {
+            beforeShowDay: function(date) {
+              var shouldShow;
+              shouldShow = dateConverted.localToUtc(date) >= new Date(ngModel.$modelValue.selected_start * 1000);
+              return [shouldShow, ""];
+            }
+          };
         }
       };
     })
@@ -1174,29 +1205,38 @@
   */
 
 
-  angular.module('wh.timeline').directive('uiUtcUnixDate', function() {
+  angular.module('wh.timeline').service('dateConverted', function() {
     return {
-      require: 'ngModel',
-      link: function(scope, element, attrs, modelCtrl) {
-        modelCtrl.$formatters.push(function(unixTime) {
-          var utcDate;
-          if (!unixTime) {
-            return;
-          }
-          utcDate = new Date(unixTime * 1000);
-          return new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate(), utcDate.getUTCHours(), utcDate.getUTCMinutes(), utcDate.getUTCSeconds(), utcDate.getUTCMilliseconds());
-        });
-        return modelCtrl.$parsers.push(function(localDate) {
-          var date;
-          if (!localDate) {
-            return;
-          }
-          date = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), localDate.getHours(), localDate.getMinutes(), localDate.getSeconds(), localDate.getMilliseconds()));
-          return parseInt((date.getTime() + '').slice(0, -3));
-        });
+      localToUtc: function(localDate) {
+        var date;
+        return date = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), localDate.getHours(), localDate.getMinutes(), localDate.getSeconds(), localDate.getMilliseconds()));
       }
     };
-  });
+  }).directive('uiUtcUnixDate', [
+    'dateConverted', function(dateConverted) {
+      return {
+        require: 'ngModel',
+        link: function(scope, element, attrs, modelCtrl) {
+          modelCtrl.$formatters.push(function(unixTime) {
+            var utcDate;
+            if (!unixTime) {
+              return;
+            }
+            utcDate = new Date(unixTime * 1000);
+            return new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate(), utcDate.getUTCHours(), utcDate.getUTCMinutes(), utcDate.getUTCSeconds(), utcDate.getUTCMilliseconds());
+          });
+          return modelCtrl.$parsers.push(function(localDate) {
+            var date;
+            if (!localDate) {
+              return;
+            }
+            date = dateConverted.localToUtc(localDate);
+            return parseInt((date.getTime() + '').slice(0, -3));
+          });
+        }
+      };
+    }
+  ]);
 
   /**
   * @ngdoc directive

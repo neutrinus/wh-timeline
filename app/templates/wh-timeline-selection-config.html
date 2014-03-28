@@ -17,7 +17,7 @@
             </form>
 
             <datepicker-inputs ui-unix-date ng-model="start"></datepicker-inputs>
-            <div ui-date ui-utc-unix-date ng-model="start"></div>
+            <div ui-date="startCalendarConfig" ui-utc-unix-date ng-model="start" ></div>
             <timepicker-unix ng-model="start"></timepicker-unix>
         </div>
 
@@ -36,7 +36,7 @@
             </form>
 
             <datepicker-inputs ui-unix-date ng-model="end"></datepicker-inputs>
-            <div ui-date ui-utc-unix-date ng-model="end"></div>
+            <div ui-date="endCalendarConfig" ui-utc-unix-date ng-model="end" ></div>
             <timepicker-unix ng-model="end"></timepicker-unix>
         </div>
     </div>
