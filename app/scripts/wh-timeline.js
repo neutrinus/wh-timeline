@@ -422,7 +422,7 @@
             length = binPerspectiveData.length;
             for (idx = _i = _ref = length - 1; _i >= 0; idx = _i += -1) {
               if (binPerspectiveData[idx].name === newActive) {
-                if (idx < length) {
+                if (idx < length && idx > 0) {
                   visible.push(binPerspectiveData[idx - 1].name);
                 }
                 break;

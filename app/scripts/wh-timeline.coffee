@@ -401,11 +401,12 @@ angular.module('wh.timeline')
                         length = binPerspectiveData.length
                         for idx in [length-1..0] by -1
                             if binPerspectiveData[idx].name == newActive
-                                if idx < length
+                                if idx < length and idx > 0
                                     visible.push binPerspectiveData[idx-1].name
                                 break
 
                         $scope.setTimePerspectives visible
+
 
                     @setVisibleTimePerspectives = (visible) -> $scope.setTimePerspectives visible
                     @getVisibleTimePerspectives = -> $scope.visibleTimePerspectives
