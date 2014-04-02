@@ -655,6 +655,9 @@ angular.module('wh.timeline')
                         unless viewValue.is_period
                             viewValue.selected_end = viewValue.selected_start
 
+                        # Refresh dates displayed in datepickers on each change
+                        setTimeout -> element.find('[ui-date]').datepicker("refresh")
+
                         # Enlarge visible area of needed {{{
                         visibleSeconds = viewValue.visible_end - viewValue.visible_start
 
@@ -761,8 +764,6 @@ angular.module('wh.timeline')
                     )
                     # }}}
 
-
-
                     # Change tracked property to false whenever
                     # month or year is changed in the calendar view
                     #
@@ -794,18 +795,28 @@ angular.module('wh.timeline')
                                     scope.$apply()
                             )
 
+                    prepareDate = (date) ->
+                        date.setHours(0)
+                        date.setMinutes(0)
+                        date.setSeconds(0)
+                        date.setMilliseconds(0)
+                        date
+
                     # Don't allow to choose "from" date which is before "to" date
                     scope.startCalendarConfig = {
                         beforeShowDay: (date) ->
-                            shouldShow = dateConverted.localToUtc(date) <= new Date(ngModel.$modelValue.selected_end*1000)
-                            return [shouldShow, ""]
+                            localDate = prepareDate(dateConverted.localToUtc(date))
+                            selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_end*1000))
+                            return [localDate <= selectedStart, ""]
                     }
 
                     # Don't allow to choose "to" date which is before "from" date
                     scope.endCalendarConfig = {
                         beforeShowDay: (date) ->
-                            shouldShow = dateConverted.localToUtc(date) >= new Date(ngModel.$modelValue.selected_start*1000)
-                            return [shouldShow, ""]
+                            localDate = prepareDate(dateConverted.localToUtc(date))
+                            selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_start*1000))
+
+                            return [localDate >= selectedStart, ""]
                     }
             }
         )

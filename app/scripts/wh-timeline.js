@@ -690,7 +690,7 @@
         },
         template: $templateCache.get('templates/wh-timeline-selection-config.html'),
         link: function(scope, element, attrs, controllers) {
-          var ngModel, whTimeline;
+          var ngModel, prepareDate, whTimeline;
           ngModel = controllers[0], whTimeline = controllers[1];
           scope.start = null;
           scope.end = null;
@@ -726,6 +726,9 @@
             if (!viewValue.is_period) {
               viewValue.selected_end = viewValue.selected_start;
             }
+            setTimeout(function() {
+              return element.find('[ui-date]').datepicker("refresh");
+            });
             visibleSeconds = viewValue.visible_end - viewValue.visible_start;
             tooLittleVisible = !(((viewValue.visible_start <= (_ref1 = viewValue.selected_start) && _ref1 <= (_ref = viewValue.selected_end)) && _ref <= viewValue.visible_end));
             if (tooLittleVisible) {
@@ -829,18 +832,27 @@
               return scope.$apply();
             }
           });
+          prepareDate = function(date) {
+            date.setHours(0);
+            date.setMinutes(0);
+            date.setSeconds(0);
+            date.setMilliseconds(0);
+            return date;
+          };
           scope.startCalendarConfig = {
             beforeShowDay: function(date) {
-              var shouldShow;
-              shouldShow = dateConverted.localToUtc(date) <= new Date(ngModel.$modelValue.selected_end * 1000);
-              return [shouldShow, ""];
+              var localDate, selectedStart;
+              localDate = prepareDate(dateConverted.localToUtc(date));
+              selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_end * 1000));
+              return [localDate <= selectedStart, ""];
             }
           };
           return scope.endCalendarConfig = {
             beforeShowDay: function(date) {
-              var shouldShow;
-              shouldShow = dateConverted.localToUtc(date) >= new Date(ngModel.$modelValue.selected_start * 1000);
-              return [shouldShow, ""];
+              var localDate, selectedStart;
+              localDate = prepareDate(dateConverted.localToUtc(date));
+              selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_start * 1000));
+              return [localDate >= selectedStart, ""];
             }
           };
         }
