@@ -12,6 +12,10 @@ to_hash = (pairs) ->
 
 angular
     .module('wh.timeline', ['ui.date','ui.bootstrap.timepicker'])
+    .filter('timestamptoutcdate', ['dateConverter', (dateConverter) ->
+        (timestamp) ->
+            return dateConverter.utcToLocal(new Date(timestamp))
+    ])
 
 ###*
 * @ngdoc service
@@ -595,8 +599,8 @@ angular.module('wh.timeline')
 ###
 angular.module('wh.timeline')
        .directive('whTimelineSelectionConfig', [
-        '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', 'dateConverted',
-        (($timeout, $templateCache, configIsolator, dateConverted) ->
+        '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', 'dateConverter',
+        (($timeout, $templateCache, configIsolator, dateConverter) ->
             return {
                 restrict: 'E'
                 replace: true
@@ -805,7 +809,7 @@ angular.module('wh.timeline')
                     # Don't allow to choose "from" date which is before "to" date
                     scope.startCalendarConfig = {
                         beforeShowDay: (date) ->
-                            localDate = prepareDate(dateConverted.localToUtc(date))
+                            localDate = prepareDate(dateConverter.localToUtc(date))
                             selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_end*1000))
                             return [localDate <= selectedStart, ""]
                     }
@@ -813,7 +817,7 @@ angular.module('wh.timeline')
                     # Don't allow to choose "to" date which is before "from" date
                     scope.endCalendarConfig = {
                         beforeShowDay: (date) ->
-                            localDate = prepareDate(dateConverted.localToUtc(date))
+                            localDate = prepareDate(dateConverter.localToUtc(date))
                             selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_start*1000))
 
                             return [localDate >= selectedStart, ""]
@@ -898,14 +902,17 @@ angular.module('wh.timeline')
 
                     # Helper function that updates selection's X and width accordingly to dates specified in viewValue
                     recalculateSelectionView = (viewValue) ->
-                        selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000))+1
+                        selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start*1000+999)) + 1
 
                         if scope.ngModel.is_period
-                            selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000)))+1
+                            selectionRight = whTimeline.getChartManager().dateToX(new Date((viewValue.selected_end*1000))) + 2
                         else selectionRight = selectionLeft
 
                         selectionWidth = selectionRight-selectionLeft
 
+                        #console.log "calcing", viewValue.selected_start*1000
+                        #console.log "calcing", scope.selectionManager.selections[0].left, scope.selectionManager.selections[0].width
+                        #console.log "calcing", selectionLeft  + whTimeline.getChartManager().viewModel.paneLeft, selectionWidth
                         scope.selectionManager.selections[0].left =  selectionLeft  + whTimeline.getChartManager().viewModel.paneLeft
                         scope.selectionManager.selections[0].width = selectionWidth
 
@@ -931,8 +938,19 @@ angular.module('wh.timeline')
                         #    scope.selectionManager.stopInteraction()
 
                         $timeout ->
-                            method = if ngModel.$viewValue.isNewSelection then 'css' else 'animate'
-                            selectionElement().stop()[method]({
+                            elem = selectionElement().stop()
+                            if ngModel.$viewValue.isNewSelection
+                                method = 'css'
+                            else
+                                pos = elem.position()
+                                if Math.abs(scope.selectionManager.selections[0].left - pos.left) < 3 or
+                                   Math.abs(scope.selectionManager.selections[0].width - pos.width) < 3
+                                    method = 'css'
+                                else
+                                    method = 'animate'
+                            #console.log "UpdatedTo", scope.selectionManager.selections[0].left, scope.selectionManager.selections[0].width
+
+                            elem[method]({
                                 left:  scope.selectionManager.selections[0].left
                                 width: scope.selectionManager.selections[0].width
                             }).css('overflow', 'visible')
@@ -949,16 +967,28 @@ angular.module('wh.timeline')
 
                         viewModel = whTimeline.getChartManager().viewModel
                         from = -viewModel.paneLeft + newSelection.left
-                        to = from + newSelection.width - 2
+                        to = from + newSelection.width
 
                         if ngModel.$viewValue.is_period
-                            from -= 1
+                            from -= 2
+                            to -= 3
                         else
                             from += 1
                             to += 2
 
                         invertedStartDate = whTimeline.getChartManager().xToDate(from)
                         invertedEndDate = whTimeline.getChartManager().xToDate(to)
+
+                        calcX = whTimeline.getChartManager().dateToX(invertedStartDate)
+                        calcTo = whTimeline.getChartManager().dateToX(invertedEndDate)
+
+                        width = to - from
+                        calcWidth = calcTo - calcX
+                        #console.log "calced ", invertedStartDate.getTime()
+                        #console.log "calced ", from, calcX,  from+viewModel.paneLeft, calcX+viewModel.paneLeft, viewModel.paneLeft
+                        #console.log "calced ", to,   calcTo, to+viewModel.paneLeft, calcTo+viewModel.paneLeft
+                        #console.log "calced ", width,   calcWidth, width+viewModel.paneLeft, calcWidth+viewModel.paneLeft
+                        #console.log "------------"
 
                         ngModel.$viewValue.selected_start = getUnix(invertedStartDate)
                         ngModel.$viewValue.selected_end = getUnix(invertedEndDate)
@@ -985,7 +1015,7 @@ angular.module('wh.timeline')
 
                         selectionElement().stop().css({
                             width: activeSelection.width
-                            left:  Math.ceil(activeSelection.left+0.00001) - 1
+                            left:  Math.round(activeSelection.left+0.00001) - 1
                         })
 
                         chartManager.viewModel.pane.css {
@@ -1041,12 +1071,15 @@ angular.module('wh.timeline')
                             # since the last iteration, let's update selection dates accordingly
 
                             if ngModel.$viewValue.is_from_tracked or ngModel.$viewValue.is_end_tracked
+                                console.log "interval", ngModel.$viewValue.selected_start
+
                                 if ngModel.$viewValue.is_start_tracked or isPoint
                                     ngModel.$viewValue.selected_start += deltaMs
 
                                 if ngModel.$viewValue.is_end_tracked or isPoint
                                     ngModel.$viewValue.selected_end += deltaMs
 
+                                # console.log "interval", ngModel.$viewValue.selected_start
                                 # Prevent start overtaking end
                                 ngModel.$viewValue.selected_end = Math.max(
                                     ngModel.$viewValue.selected_start,
@@ -1064,7 +1097,7 @@ angular.module('wh.timeline')
                                 )
 
                                 ngModel.$setViewValue($.extend {}, ngModel.$viewValue)
-                                ngModel.$render()
+                                # ngModel.$render()
 
                                 scope.$apply()
 
@@ -1219,7 +1252,7 @@ angular.module('wh.timeline')
 </example>
 ###
 angular.module('wh.timeline')
-    .service('dateConverted', ->
+    .service('dateConverter', ->
         localToUtc: (localDate) ->
             date = new Date(Date.UTC(
                 localDate.getFullYear(),
@@ -1230,28 +1263,31 @@ angular.module('wh.timeline')
                 localDate.getSeconds(),
                 localDate.getMilliseconds()
             ))
+
+        utcToLocal: (utcDate) ->
+            return new Date(
+                utcDate.getUTCFullYear(),
+                utcDate.getUTCMonth(),
+                utcDate.getUTCDate(),
+                utcDate.getUTCHours(),
+                utcDate.getUTCMinutes(),
+                utcDate.getUTCSeconds(),
+                utcDate.getUTCMilliseconds()
+            )
     )
 
-    .directive('uiUtcUnixDate', ['dateConverted', (dateConverted) ->
+    .directive('uiUtcUnixDate', ['dateConverter', (dateConverter) ->
         require: 'ngModel'
         link: (scope, element, attrs, modelCtrl) ->
 
             modelCtrl.$formatters.push (unixTime) ->
                 return unless unixTime
                 utcDate = new Date(unixTime*1000)
-                return new Date(
-                    utcDate.getUTCFullYear(),
-                    utcDate.getUTCMonth(),
-                    utcDate.getUTCDate(),
-                    utcDate.getUTCHours(),
-                    utcDate.getUTCMinutes(),
-                    utcDate.getUTCSeconds(),
-                    utcDate.getUTCMilliseconds()
-                )
+                return dateConverter.utcToLocal(utcDate)
 
             modelCtrl.$parsers.push (localDate) ->
                 return unless localDate
-                date = dateConverted.localToUtc(localDate)
+                date = dateConverter.localToUtc(localDate)
                 return parseInt((date.getTime()+'').slice(0,-3))
     ])
 

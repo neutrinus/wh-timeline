@@ -678,9 +678,9 @@ class D3ChartManager extends ChartManager
             elem.rendered = true
             i++
 
-        @viewModel.paneLeft = -renderOptions.renderBefore
+        @viewModel.paneLeft = -Math.ceil(renderOptions.renderBefore)
         @viewModel.pane.css('left',   @viewModel.paneLeft)
-        @viewModel.pane.css('width', -@viewModel.paneLeft*2.5)
+        @viewModel.pane.css('width', -Math.ceil(@viewModel.paneLeft*2.5))
 
         @doRenderAxes(activeCharts, renderOptions)
 

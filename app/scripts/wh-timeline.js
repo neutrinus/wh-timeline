@@ -20,7 +20,13 @@
     return hash;
   };
 
-  angular.module('wh.timeline', ['ui.date', 'ui.bootstrap.timepicker']);
+  angular.module('wh.timeline', ['ui.date', 'ui.bootstrap.timepicker']).filter('timestamptoutcdate', [
+    'dateConverter', function(dateConverter) {
+      return function(timestamp) {
+        return dateConverter.utcToLocal(new Date(timestamp));
+      };
+    }
+  ]);
 
   /**
   * @ngdoc service
@@ -674,7 +680,7 @@
 
 
   angular.module('wh.timeline').directive('whTimelineSelectionConfig', [
-    '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', 'dateConverted', (function($timeout, $templateCache, configIsolator, dateConverted) {
+    '$timeout', '$templateCache', 'wh.timeline.utils.configIsolator', 'dateConverter', (function($timeout, $templateCache, configIsolator, dateConverter) {
       return {
         restrict: 'E',
         replace: true,
@@ -842,7 +848,7 @@
           scope.startCalendarConfig = {
             beforeShowDay: function(date) {
               var localDate, selectedStart;
-              localDate = prepareDate(dateConverted.localToUtc(date));
+              localDate = prepareDate(dateConverter.localToUtc(date));
               selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_end * 1000));
               return [localDate <= selectedStart, ""];
             }
@@ -850,7 +856,7 @@
           return scope.endCalendarConfig = {
             beforeShowDay: function(date) {
               var localDate, selectedStart;
-              localDate = prepareDate(dateConverted.localToUtc(date));
+              localDate = prepareDate(dateConverter.localToUtc(date));
               selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_start * 1000));
               return [localDate >= selectedStart, ""];
             }
@@ -922,9 +928,9 @@
           });
           recalculateSelectionView = function(viewValue) {
             var selectionLeft, selectionRight, selectionWidth;
-            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000)) + 1;
+            selectionLeft = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_start * 1000 + 999)) + 1;
             if (scope.ngModel.is_period) {
-              selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000)) + 1;
+              selectionRight = whTimeline.getChartManager().dateToX(new Date(viewValue.selected_end * 1000)) + 2;
             } else {
               selectionRight = selectionLeft;
             }
@@ -949,9 +955,19 @@
           });
           ngModel.$render = function() {
             return $timeout(function() {
-              var method;
-              method = ngModel.$viewValue.isNewSelection ? 'css' : 'animate';
-              return selectionElement().stop()[method]({
+              var elem, method, pos;
+              elem = selectionElement().stop();
+              if (ngModel.$viewValue.isNewSelection) {
+                method = 'css';
+              } else {
+                pos = elem.position();
+                if (Math.abs(scope.selectionManager.selections[0].left - pos.left) < 3 || Math.abs(scope.selectionManager.selections[0].width - pos.width) < 3) {
+                  method = 'css';
+                } else {
+                  method = 'animate';
+                }
+              }
+              return elem[method]({
                 left: scope.selectionManager.selections[0].left,
                 width: scope.selectionManager.selections[0].width
               }).css('overflow', 'visible');
@@ -959,7 +975,7 @@
           };
           hasScheduledUpdate = false;
           updateModel = function() {
-            var from, invertedEndDate, invertedStartDate, newSelection, to, viewModel;
+            var calcTo, calcWidth, calcX, from, invertedEndDate, invertedStartDate, newSelection, to, viewModel, width;
             hasScheduledUpdate = false;
             if (!scope.selectionManager.selections.length) {
               return;
@@ -967,15 +983,20 @@
             newSelection = scope.selectionManager.selections[0];
             viewModel = whTimeline.getChartManager().viewModel;
             from = -viewModel.paneLeft + newSelection.left;
-            to = from + newSelection.width - 2;
+            to = from + newSelection.width;
             if (ngModel.$viewValue.is_period) {
-              from -= 1;
+              from -= 2;
+              to -= 3;
             } else {
               from += 1;
               to += 2;
             }
             invertedStartDate = whTimeline.getChartManager().xToDate(from);
             invertedEndDate = whTimeline.getChartManager().xToDate(to);
+            calcX = whTimeline.getChartManager().dateToX(invertedStartDate);
+            calcTo = whTimeline.getChartManager().dateToX(invertedEndDate);
+            width = to - from;
+            calcWidth = calcTo - calcX;
             ngModel.$viewValue.selected_start = getUnix(invertedStartDate);
             ngModel.$viewValue.selected_end = getUnix(invertedEndDate);
             ngModel.$viewValue.visible_start = getUnix(new Date(whTimeline.getChartManager().xToDate(-viewModel.paneLeft)));
@@ -994,7 +1015,7 @@
             activeSelection = scope.selectionManager.selections[0];
             selectionElement().stop().css({
               width: activeSelection.width,
-              left: Math.ceil(activeSelection.left + 0.00001) - 1
+              left: Math.round(activeSelection.left + 0.00001) - 1
             });
             chartManager.viewModel.pane.css({
               left: chartManager.viewModel.paneLeft
@@ -1036,6 +1057,7 @@
             isPoint = !scope.ngModel.is_period;
             if (activeSelection && activeSelection.state === 'none' && deltaMs) {
               if (ngModel.$viewValue.is_from_tracked || ngModel.$viewValue.is_end_tracked) {
+                console.log("interval", ngModel.$viewValue.selected_start);
                 if (ngModel.$viewValue.is_start_tracked || isPoint) {
                   ngModel.$viewValue.selected_start += deltaMs;
                 }
@@ -1045,7 +1067,6 @@
                 ngModel.$viewValue.selected_end = Math.max(ngModel.$viewValue.selected_start, ngModel.$viewValue.selected_end);
                 ngModel.$viewValue.visible_end = Math.max(ngModel.$viewValue.visible_end, ngModel.$viewValue.selected_end);
                 ngModel.$setViewValue($.extend({}, ngModel.$viewValue));
-                ngModel.$render();
                 scope.$apply();
               }
             }
@@ -1217,15 +1238,18 @@
   */
 
 
-  angular.module('wh.timeline').service('dateConverted', function() {
+  angular.module('wh.timeline').service('dateConverter', function() {
     return {
       localToUtc: function(localDate) {
         var date;
         return date = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), localDate.getHours(), localDate.getMinutes(), localDate.getSeconds(), localDate.getMilliseconds()));
+      },
+      utcToLocal: function(utcDate) {
+        return new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate(), utcDate.getUTCHours(), utcDate.getUTCMinutes(), utcDate.getUTCSeconds(), utcDate.getUTCMilliseconds());
       }
     };
   }).directive('uiUtcUnixDate', [
-    'dateConverted', function(dateConverted) {
+    'dateConverter', function(dateConverter) {
       return {
         require: 'ngModel',
         link: function(scope, element, attrs, modelCtrl) {
@@ -1235,14 +1259,14 @@
               return;
             }
             utcDate = new Date(unixTime * 1000);
-            return new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate(), utcDate.getUTCHours(), utcDate.getUTCMinutes(), utcDate.getUTCSeconds(), utcDate.getUTCMilliseconds());
+            return dateConverter.utcToLocal(utcDate);
           });
           return modelCtrl.$parsers.push(function(localDate) {
             var date;
             if (!localDate) {
               return;
             }
-            date = dateConverted.localToUtc(localDate);
+            date = dateConverter.localToUtc(localDate);
             return parseInt((date.getTime() + '').slice(0, -3));
           });
         }

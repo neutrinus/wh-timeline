@@ -146,15 +146,15 @@ class SelectionAreaMover
     ###
     compose: (deltaX) ->
         if (not @area.subState or @area.subState == 'moveRightBound') and    -deltaX >= @area.width and @area.left > 1 and not @area.overflow
-            pDeltaX = -deltaX - @area.width
+            pDeltaX = Math.ceil(-deltaX - @area.width)
 
-            @area.left = @area.left - pDeltaX
+            @area.left = Math.ceil(@area.left - pDeltaX)
             @area.width = pDeltaX + 1
             @area.subState = 'moveLeftBound'
         else if (not @area.subState or @area.subState == 'moveLeftBound') and deltaX >= @area.width and @area.left + @area.width < @paneWidth and not @area.overflow
-            pDeltaX = deltaX - @area.width
+            pDeltaX = Math.ceil(deltaX - @area.width)
 
-            @area.left = @area.left + @area.width - 1
+            @area.left = Math.ceil(@area.left + @area.width - 1)
             @area.width = pDeltaX + 1
             @area.subState = 'moveRightBound'
         else
@@ -215,7 +215,7 @@ class SelectionAreaMover
         x = Math.min(maxX, x)
         x = Math.max(minX, x)
 
-        return x
+        return Math.ceil(x)
 
     ###*
     * @ngdoc method
@@ -275,7 +275,7 @@ class SelectionPointMover extends SelectionAreaMover
             @area.left = @area.left - pDeltaX
             @area.subState = 'moveLeftBound'
         else if (not @area.subState or @area.subState == 'moveLeftBound') and deltaX >= @area.width and @area.left + @area.width < @paneWidth and not @area.overflow
-            @area.left = @area.left + @area.width + deltaX - 2
+            @area.left = Math.ceil(@area.left + @area.width + deltaX - 2)
             @area.subState = 'moveRightBound'
         else
             @[@area.subState](deltaX)
@@ -744,7 +744,7 @@ class ChartPanePlugin
                     return if @interactionStopped
                     stepDeltaPx = Math.round(progress * deltaPx + 0.00001)
                     beforeStep(Math.abs(stepDeltaPx))
-                    newpaneLeft = paneLeft - stepDeltaPx
+                    newpaneLeft = Math.ceil(paneLeft - stepDeltaPx)
                     @chartManager.viewModel.paneLeft = newpaneLeft
                     @options.onUpdate({
                         selection:       activeSelection

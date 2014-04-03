@@ -871,9 +871,9 @@
         elem.rendered = true;
         i++;
       }
-      this.viewModel.paneLeft = -renderOptions.renderBefore;
+      this.viewModel.paneLeft = -Math.ceil(renderOptions.renderBefore);
       this.viewModel.pane.css('left', this.viewModel.paneLeft);
-      this.viewModel.pane.css('width', -this.viewModel.paneLeft * 2.5);
+      this.viewModel.pane.css('width', -Math.ceil(this.viewModel.paneLeft * 2.5));
       return this.doRenderAxes(activeCharts, renderOptions);
     };
 

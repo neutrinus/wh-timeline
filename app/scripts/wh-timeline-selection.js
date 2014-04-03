@@ -195,13 +195,13 @@
     SelectionAreaMover.prototype.compose = function(deltaX) {
       var pDeltaX;
       if ((!this.area.subState || this.area.subState === 'moveRightBound') && -deltaX >= this.area.width && this.area.left > 1 && !this.area.overflow) {
-        pDeltaX = -deltaX - this.area.width;
-        this.area.left = this.area.left - pDeltaX;
+        pDeltaX = Math.ceil(-deltaX - this.area.width);
+        this.area.left = Math.ceil(this.area.left - pDeltaX);
         this.area.width = pDeltaX + 1;
         return this.area.subState = 'moveLeftBound';
       } else if ((!this.area.subState || this.area.subState === 'moveLeftBound') && deltaX >= this.area.width && this.area.left + this.area.width < this.paneWidth && !this.area.overflow) {
-        pDeltaX = deltaX - this.area.width;
-        this.area.left = this.area.left + this.area.width - 1;
+        pDeltaX = Math.ceil(deltaX - this.area.width);
+        this.area.left = Math.ceil(this.area.left + this.area.width - 1);
         this.area.width = pDeltaX + 1;
         return this.area.subState = 'moveRightBound';
       } else {
@@ -273,7 +273,7 @@
       maxX = this.area.width - 1;
       x = Math.min(maxX, x);
       x = Math.max(minX, x);
-      return x;
+      return Math.ceil(x);
     };
 
     /**
@@ -353,7 +353,7 @@
         this.area.left = this.area.left - pDeltaX;
         this.area.subState = 'moveLeftBound';
       } else if ((!this.area.subState || this.area.subState === 'moveLeftBound') && deltaX >= this.area.width && this.area.left + this.area.width < this.paneWidth && !this.area.overflow) {
-        this.area.left = this.area.left + this.area.width + deltaX - 2;
+        this.area.left = Math.ceil(this.area.left + this.area.width + deltaX - 2);
         this.area.subState = 'moveRightBound';
       } else {
         this[this.area.subState](deltaX);
@@ -939,7 +939,7 @@
             }
             stepDeltaPx = Math.round(progress * deltaPx + 0.00001);
             beforeStep(Math.abs(stepDeltaPx));
-            newpaneLeft = paneLeft - stepDeltaPx;
+            newpaneLeft = Math.ceil(paneLeft - stepDeltaPx);
             _this.chartManager.viewModel.paneLeft = newpaneLeft;
             return _this.options.onUpdate({
               selection: activeSelection,

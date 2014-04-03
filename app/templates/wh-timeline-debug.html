@@ -10,9 +10,9 @@
                 {{ (config.visible_end*1000)|date:"dd-MM-yyyy HH:mm:ss" }}
             </td>
             <td>
-                <h5>Selected time (local):</h5>
-                <b>From:</b>&nbsp;{{ (config.selected_start*1000)|date:"dd-MM-yyyy HH:mm:ss" }}<br/>
-                <b>To:</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ (config.selected_end*1000)|date:"dd-MM-yyyy HH:mm:ss" }}
+                <h5>Selected time:</h5>
+                <b>From:</b>&nbsp;{{ (config.selected_start*1000)|timestamptoutcdate|date:"dd-MM-yyyy HH:mm:ss" }}<br/>
+                <b>To:</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ (config.selected_end*1000)|timestamptoutcdate|date:"dd-MM-yyyy HH:mm:ss" }}
             </td>
         </tr>
     </table>
