@@ -962,7 +962,7 @@
                 method = 'css';
               } else {
                 pos = elem.position();
-                if (Math.abs(scope.selectionManager.selections[0].left - pos.left) < 3 || Math.abs(scope.selectionManager.selections[0].width - pos.width) < 3) {
+                if (Math.abs(scope.selectionManager.selections[0].left - pos.left) < 3) {
                   method = 'css';
                 } else {
                   method = 'animate';
