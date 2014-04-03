@@ -525,6 +525,10 @@ angular.module('wh.timeline')
                     factor = if deltaIdx > 0 then 1 else -1
                     deltaVisible = Math.ceil(binWidthRatio*visibleSeconds/2) * factor
 
+                    visibleArea = whTimeline.getChartManager().viewModel.viewportOverlay.width
+                    binWidthWidthRatio = visibleSeconds / scope.binWidths[scope.active]
+                    binWidthPx = visibleArea / binWidthWidthRatio
+
                     projectedStart = ngModel.$viewValue.selected_start + selectedSeconds / 2 - visibleSeconds / 2
                     projectedEnd   = projectedStart + visibleSeconds
 
@@ -542,6 +546,12 @@ angular.module('wh.timeline')
                     unless projectedStartX <= selectedStartX <= selectedEndX <= projectedEndX
                         scope.onZoomRejected()
                         return
+
+                    if binWidthPx <= 3
+                        projectedStart = ngModel.$viewValue.selected_start
+                        projectedEnd = ngModel.$viewValue.selected_end
+                        projectedStartX = cm.dateToX(new Date(projectedStart*1000))
+                        projectedEndX = cm.dateToX(new Date(projectedEnd*1000))
 
                     scope.active  = newActive
                     scope.visible = [newActive]
@@ -652,6 +662,9 @@ angular.module('wh.timeline')
                     ngModel.$formatters.push (modelValue) ->
                         scope.start = modelValue.selected_start
                         scope.end   = modelValue.selected_end
+
+                        setTimeout -> element.find('[ui-date]').datepicker("refresh")
+
                         return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked', ])
 
                     # Process and parse view changes
@@ -726,7 +739,7 @@ angular.module('wh.timeline')
                         ngModel.$viewValue.is_start_tracked = newChoice.start_tracked
                         ngModel.$viewValue.is_end_tracked   = newChoice.end_tracked
 
-                        # shrink visible area of needed {{{
+                        # shrink visible area if needed {{{
                         visibleSeconds  = ngModel.$viewValue.visible_end  - ngModel.$viewValue.visible_start
                         selectedSeconds = ngModel.$viewValue.selected_end - ngModel.$viewValue.selected_start
 
@@ -822,24 +835,25 @@ angular.module('wh.timeline')
 
 
                     prepareDate = (date) ->
-                        date.setHours(0)
-                        date.setMinutes(0)
-                        date.setSeconds(0)
-                        date.setMilliseconds(0)
+                        date.setUTCHours(0)
+                        date.setUTCMinutes(0)
+                        date.setUTCSeconds(0)
+                        date.setUTCMilliseconds(0)
                         date
 
                     # Don't allow to choose "from" date which is before "to" date
                     scope.startCalendarConfig = {
                         beforeShowDay: (date) ->
-                            localDate = prepareDate(dateConverter.localToUtc(date))
-                            selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_end*1000))
-                            return [localDate <= selectedStart, ""]
+                            localDate   = prepareDate(dateConverter.localToUtc(date))
+                            selectedEnd = prepareDate(new Date(ngModel.$modelValue.selected_end*1000))
+
+                            return [localDate <= selectedEnd, ""]
                     }
 
                     # Don't allow to choose "to" date which is before "from" date
                     scope.endCalendarConfig = {
                         beforeShowDay: (date) ->
-                            localDate = prepareDate(dateConverter.localToUtc(date))
+                            localDate     = prepareDate(dateConverter.localToUtc(date))
                             selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_start*1000))
 
                             return [localDate >= selectedStart, ""]

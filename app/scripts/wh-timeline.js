@@ -579,7 +579,7 @@
           scope.available = null;
           scope.binWidths = null;
           scope["switch"] = function(how) {
-            var binWidthRatio, cm, currentIdx, deltaIdx, deltaVisible, factor, newActive, newIdx, projectedEnd, projectedEndX, projectedStart, projectedStartX, selectedEndX, selectedSeconds, selectedStartX, visibleSeconds;
+            var binWidthPx, binWidthRatio, binWidthWidthRatio, cm, currentIdx, deltaIdx, deltaVisible, factor, newActive, newIdx, projectedEnd, projectedEndX, projectedStart, projectedStartX, selectedEndX, selectedSeconds, selectedStartX, visibleArea, visibleSeconds;
             switch (how) {
               case '+':
               case 1:
@@ -610,6 +610,9 @@
             binWidthRatio = Math.max(1, binWidthRatio) - Math.min(1, binWidthRatio);
             factor = deltaIdx > 0 ? 1 : -1;
             deltaVisible = Math.ceil(binWidthRatio * visibleSeconds / 2) * factor;
+            visibleArea = whTimeline.getChartManager().viewModel.viewportOverlay.width;
+            binWidthWidthRatio = visibleSeconds / scope.binWidths[scope.active];
+            binWidthPx = visibleArea / binWidthWidthRatio;
             projectedStart = ngModel.$viewValue.selected_start + selectedSeconds / 2 - visibleSeconds / 2;
             projectedEnd = projectedStart + visibleSeconds;
             projectedStart += deltaVisible;
@@ -622,6 +625,12 @@
             if (!(((projectedStartX <= selectedStartX && selectedStartX <= selectedEndX) && selectedEndX <= projectedEndX))) {
               scope.onZoomRejected();
               return;
+            }
+            if (binWidthPx <= 3) {
+              projectedStart = ngModel.$viewValue.selected_start;
+              projectedEnd = ngModel.$viewValue.selected_end;
+              projectedStartX = cm.dateToX(new Date(projectedStart * 1000));
+              projectedEndX = cm.dateToX(new Date(projectedEnd * 1000));
             }
             scope.active = newActive;
             scope.visible = [newActive];
@@ -725,6 +734,9 @@
           ngModel.$formatters.push(function(modelValue) {
             scope.start = modelValue.selected_start;
             scope.end = modelValue.selected_end;
+            setTimeout(function() {
+              return element.find('[ui-date]').datepicker("refresh");
+            });
             return configIsolator.isolate(modelValue, ['is_period', 'selected_start', 'selected_end', 'visible_start', 'visible_end', 'is_end_tracked', 'is_start_tracked']);
           });
           ngModel.$parsers.push(function(viewValue) {
@@ -853,18 +865,18 @@
             });
           });
           prepareDate = function(date) {
-            date.setHours(0);
-            date.setMinutes(0);
-            date.setSeconds(0);
-            date.setMilliseconds(0);
+            date.setUTCHours(0);
+            date.setUTCMinutes(0);
+            date.setUTCSeconds(0);
+            date.setUTCMilliseconds(0);
             return date;
           };
           scope.startCalendarConfig = {
             beforeShowDay: function(date) {
-              var localDate, selectedStart;
+              var localDate, selectedEnd;
               localDate = prepareDate(dateConverter.localToUtc(date));
-              selectedStart = prepareDate(new Date(ngModel.$modelValue.selected_end * 1000));
-              return [localDate <= selectedStart, ""];
+              selectedEnd = prepareDate(new Date(ngModel.$modelValue.selected_end * 1000));
+              return [localDate <= selectedEnd, ""];
             }
           };
           return scope.endCalendarConfig = {
