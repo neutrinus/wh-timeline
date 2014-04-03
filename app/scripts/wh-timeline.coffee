@@ -794,6 +794,7 @@ angular.module('wh.timeline')
                             '.ui-datepicker-next, .ui-datepicker-prev',
                             (e) ->
                                 if ngModel.$modelValue.is_end_tracked
+                                    ngModel.$modelValue.is_start_tracked = false
                                     ngModel.$modelValue.is_end_tracked = false
                                     ngModel.$setViewValue ngModel.$modelValue
                                     scope.$apply()
@@ -1071,7 +1072,7 @@ angular.module('wh.timeline')
                             # since the last iteration, let's update selection dates accordingly
 
                             if ngModel.$viewValue.is_from_tracked or ngModel.$viewValue.is_end_tracked
-                                console.log "interval", ngModel.$viewValue.selected_start
+                                # console.log "interval", ngModel.$viewValue.selected_start
 
                                 if ngModel.$viewValue.is_start_tracked or isPoint
                                     ngModel.$viewValue.selected_start += deltaMs

@@ -833,6 +833,7 @@
           });
           element.find('.calendar.to').on('mousedown', '.ui-datepicker-next, .ui-datepicker-prev', function(e) {
             if (ngModel.$modelValue.is_end_tracked) {
+              ngModel.$modelValue.is_start_tracked = false;
               ngModel.$modelValue.is_end_tracked = false;
               ngModel.$setViewValue(ngModel.$modelValue);
               return scope.$apply();
@@ -1057,7 +1058,6 @@
             isPoint = !scope.ngModel.is_period;
             if (activeSelection && activeSelection.state === 'none' && deltaMs) {
               if (ngModel.$viewValue.is_from_tracked || ngModel.$viewValue.is_end_tracked) {
-                console.log("interval", ngModel.$viewValue.selected_start);
                 if (ngModel.$viewValue.is_start_tracked || isPoint) {
                   ngModel.$viewValue.selected_start += deltaMs;
                 }
