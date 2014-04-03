@@ -548,8 +548,14 @@ angular.module('wh.timeline')
                         return
 
                     if binWidthPx <= 3
-                        projectedStart = ngModel.$viewValue.selected_start
-                        projectedEnd = ngModel.$viewValue.selected_end
+                        optimalSeconds = Math.ceil(visibleArea * scope.binWidths[newActive] / 10)
+                        if selectedSeconds > optimalSeconds
+                            projectedStart = ngModel.$viewValue.selected_start
+                            projectedEnd = ngModel.$viewValue.selected_end
+                        else
+                            _delta = (optimalSeconds - selectedSeconds) / 2
+                            projectedStart = ngModel.$viewValue.selected_start - _delta
+                            projectedEnd = ngModel.$viewValue.selected_end + _delta
                         projectedStartX = cm.dateToX(new Date(projectedStart*1000))
                         projectedEndX = cm.dateToX(new Date(projectedEnd*1000))
 
