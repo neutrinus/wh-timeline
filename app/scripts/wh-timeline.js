@@ -839,6 +839,19 @@
               return scope.$apply();
             }
           });
+          $(function() {
+            element.find('.calendar.from input[type=text]').focus(function() {
+              ngModel.$modelValue.is_start_tracked = false;
+              ngModel.$setViewValue(ngModel.$modelValue);
+              return scope.$apply();
+            });
+            return element.find('.calendar.to input[type=text]').focus(function() {
+              ngModel.$modelValue.is_start_tracked = false;
+              ngModel.$modelValue.is_end_tracked = false;
+              ngModel.$setViewValue(ngModel.$modelValue);
+              return scope.$apply();
+            });
+          });
           prepareDate = function(date) {
             date.setHours(0);
             date.setMinutes(0);

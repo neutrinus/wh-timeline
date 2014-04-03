@@ -800,6 +800,27 @@ angular.module('wh.timeline')
                                     scope.$apply()
                             )
 
+                    # Change tracked property to false whenever
+                    # any date-related input gains focus
+                    $ ->
+                        element
+                            .find('.calendar.from input[type=text]')
+                            .focus(->
+                                ngModel.$modelValue.is_start_tracked = false;
+                                ngModel.$setViewValue ngModel.$modelValue;
+                                scope.$apply();
+                            )
+
+                        element
+                            .find('.calendar.to input[type=text]')
+                            .focus(->
+                                ngModel.$modelValue.is_start_tracked = false;
+                                ngModel.$modelValue.is_end_tracked = false;
+                                ngModel.$setViewValue ngModel.$modelValue;
+                                scope.$apply();
+                            )
+
+
                     prepareDate = (date) ->
                         date.setHours(0)
                         date.setMinutes(0)
