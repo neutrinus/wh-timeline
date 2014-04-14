@@ -109,14 +109,25 @@ window.TimelineController = ($scope) ->
         $scope.$apply()
     )
 
+    # now = Math.ceil((new Date()).getTime() / 1000)
+    now = 1396596660
+
     $scope.timelineConfig = {
         is_period: true,
 
+        selected_start: now - 60 * 60 * 2,
+        selected_end: now,
+
+        visible_start: now - 26517600 + 60 * 60 * 24,
+        visible_end: now + 60 * 60 * 24,
+
+        ###
         selected_start: 1385856000,    # December 1, 2013, midnight
         selected_end: 1388849426,      # January 4, 2013, 15:30:26
 
         visible_start: 1370044800,     # - 3600 # June 1, 2013, midnight
         visible_end:   1388849426,     # January 4, 2013, 15:30:26 # 1388530800
+        ###
 
         is_start_tracked: false,
         is_end_tracked: true,

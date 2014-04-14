@@ -159,9 +159,9 @@
 
     SelectionAreaMover.prototype.handleOverflowMove = function(bounds, deltaX) {
       if (this.area.left === 0 && !(deltaX > 0 && bounds.left > 0)) {
-        this.area.overflow = Math.min(0, this.area.overflow + deltaX, bounds.left);
+        this.area.overflow = Math.floor(Math.min(0, this.area.overflow + deltaX, bounds.left));
       } else if (this.area.right >= this.paneWidth && !(deltaX < 0 && bounds.right < this.paneWidth)) {
-        this.area.overflow = Math.max(0, this.area.overflow + deltaX, bounds.right - this.paneWidth);
+        this.area.overflow = Math.floor(Math.max(0, this.area.overflow + deltaX, bounds.right - this.paneWidth));
       } else {
         this.area.overflow = 0;
       }

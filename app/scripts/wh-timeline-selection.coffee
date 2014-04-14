@@ -113,11 +113,11 @@ class SelectionAreaMover
     handleOverflowMove:  (bounds, deltaX) ->
         # If selection sticked to the left and mouse is either (inside of the selection AND moving to the left) or outside of the pane
         if @area.left == 0 and not (deltaX > 0 and bounds.left > 0)
-            @area.overflow = Math.min(0, @area.overflow + deltaX, bounds.left)
+            @area.overflow = Math.floor(Math.min(0, @area.overflow + deltaX, bounds.left))
 
         # If selection sticked to the right and mouse is either (inside of the selection AND moving to the right) or outside of the pane
         else if @area.right >= @paneWidth and not (deltaX < 0 and bounds.right < @paneWidth)
-            @area.overflow = Math.max(0, @area.overflow + deltaX, bounds.right - @paneWidth)
+            @area.overflow = Math.floor(Math.max(0, @area.overflow + deltaX, bounds.right - @paneWidth))
 
         # Otherwise there is no overflow
         else @area.overflow = 0

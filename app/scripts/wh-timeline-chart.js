@@ -101,13 +101,13 @@
     };
 
     ChartViewModel.prototype.refreshContainerDimensions = function() {
-      this.containerData.width = this.container.width();
-      return this.containerData.height = this.chartsThemselves.height();
+      this.containerData.width = Math.floor(this.container.width());
+      return this.containerData.height = Math.floor(this.chartsThemselves.height());
     };
 
     ChartViewModel.prototype.refreshViewportOverlayDimensions = function() {
-      this.viewportOverlay.width = this.viewport.width();
-      return this.viewportOverlay.height = this.containerData.height;
+      this.viewportOverlay.width = Math.floor(this.viewport.width());
+      return this.viewportOverlay.height = Math.floor(this.containerData.height);
     };
 
     ChartViewModel.prototype.refreshViewportOverlayVisibleWidth = function(forceRefreshInitialWidth) {

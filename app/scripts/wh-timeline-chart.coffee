@@ -74,12 +74,12 @@ class ChartViewModel
         @refreshViewportOverlayVisibleWidth()
 
     refreshContainerDimensions: ->
-        @containerData.width  = @container.width()
-        @containerData.height = @chartsThemselves.height()
+        @containerData.width  = Math.floor(@container.width())
+        @containerData.height = Math.floor(@chartsThemselves.height())
 
     refreshViewportOverlayDimensions: ->
-        @viewportOverlay.width  = @viewport.width()
-        @viewportOverlay.height = @containerData.height
+        @viewportOverlay.width  = Math.floor(@viewport.width())
+        @viewportOverlay.height = Math.floor(@containerData.height)
 
     refreshViewportOverlayVisibleWidth: (forceRefreshInitialWidth=false) ->
         @viewportOverlay.visibleWidth = @containerData.width
